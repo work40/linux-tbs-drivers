@@ -440,6 +440,20 @@ config DVB_TBS5280FE
 	help
 	  A DVB-T/T2/C tuner module. Say Y when you want to support this frontend.
 
+config DVB_TBS5281FE
+	tristate "TurboSight TBS5281FE based"
+	depends on DVB_CORE && I2C
+	default m if DVB_FE_CUSTOMISE
+	help
+	  A DVB-T/T2/C tuner module. Say Y when you want to support this frontend.
+
+config DVB_TBS5990FE
+	tristate "TurboSight TBS5990FE based"
+	depends on DVB_CORE && I2C
+	default m if DVB_FE_CUSTOMISE
+	help
+	  A DVB-S/S2 CI tuner module. Say Y when you want to support this frontend.
+
 config DVB_TBSDVBCFE
 	tristate "TurboSight TBSDVBCFE based"
 	depends on DVB_CORE && I2C

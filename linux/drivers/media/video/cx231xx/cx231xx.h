@@ -70,6 +70,8 @@
 #define CX231XX_BOARD_HAUPPAUGE_USB2_FM_PAL 14
 #define CX231XX_BOARD_HAUPPAUGE_USB2_FM_NTSC 15
 #define CX231XX_BOARD_TBS_5280 16
+#define CX231XX_BOARD_TBS_5281 17
+#define CX231XX_BOARD_TBS_5990 18
 
 /* Limits minimum and default number of buffers */
 #define CX231XX_MIN_BUF                 4

@@ -18,10 +18,6 @@
 
 #include "dvb_ca_en50221.h"
 
-#ifndef USB_PID_TBSQBOX
-#define USB_PID_TBSQBOX 0x5980
-#endif
-
 #define TBSQBOX_READ_MSG 0
 #define TBSQBOX_WRITE_MSG 1
 
@@ -721,14 +717,13 @@ static int tbsqbox2ci_load_firmware(struct usb_device *dev,
 	int ret = 0, i;
 	u8 reset;
 	const struct firmware *fw;
-	const char *filename = "dvb-usb-tbsqbox-id5980.fw";
 	switch (dev->descriptor.idProduct) {
 	case 0x5980:
-		ret = request_firmware(&fw, filename, &dev->dev);
+		ret = request_firmware(&fw, tbsqbox2ci_properties.firmware, &dev->dev);
 		if (ret != 0) {
 			err("did not find the firmware file. (%s) "
 			"Please see linux/Documentation/dvb/ for more details "
-			"on firmware-problems.", filename);
+			"on firmware-problems.", tbsqbox2ci_properties.firmware);
 			return ret;
 		}
 		break;

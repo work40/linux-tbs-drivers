@@ -2794,6 +2794,9 @@ static struct stv090x_config stv0900_config = {
 	.tuner_set_frequency	= stb6100_set_frequency,
 	.tuner_set_bandwidth	= stb6100_set_bandwidth,
 	.tuner_get_bandwidth	= stb6100_get_bandwidth,
+
+	.tun1_iqswap=1,
+	.tun2_iqswap=1,
 };
 
 static struct stb6100_config stb6100_config = {
@@ -2860,6 +2863,13 @@ static int saa716x_tbs6925_frontend_attach(struct saa716x_adapter *adapter, int 
 					dvb_frontend_detach(adapter->fe);
 					goto exit;
 				}
+
+				/* call the init function once to initialize
+				   tuner's clock output divider and demod's
+				   master clock */
+				if (adapter->fe->ops.init)
+					adapter->fe->ops.init(adapter->fe);
+
 				tbs_read_mac(&i2c1->i2c_adapter, 160 + 16*count, mac);
 				memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
 				printk(KERN_INFO "TurboSight TBS6925 DVB-S2 card MAC=%pM\n",
@@ -3027,8 +3037,8 @@ static struct stv090x_config tbs6992fe_config = {
 
 	.tuner_set_frequency	= tbs6992_set_frequency,
 	
-	.agc_rf1	= 0x10,
-	.agc_rf2	= 0x12,
+	.agc_rf1_inv	= 1,
+	.agc_rf2_inv	= 1,
 };
 
 static struct tbs6992_config tbs6992_config = {
@@ -3058,6 +3068,13 @@ static int saa716x_tbs6992_frontend_attach(struct saa716x_adapter *adapter, int 
 						&i2c->i2c_adapter);
 				if (!ctl)
 					goto exit;
+
+				/* call the init function once to initialize
+				   tuner's clock output divider and demod's
+				   master clock */
+				if (adapter->fe->ops.init)
+					adapter->fe->ops.init(adapter->fe);
+
 				dvb_attach(isl6423_attach,
 						adapter->fe,
 						&i2c->i2c_adapter,
@@ -4280,8 +4297,8 @@ static struct stv090x_config tbs6926fe_config = {
 
 	.tuner_set_frequency  = tbs6926_set_frequency,
 
-	.agc_rf1	= 0x10,
-	.agc_rf2	= 0x12,
+	.agc_rf1_inv	= 1,
+	.agc_rf2_inv	= 1,
 };
 
 static struct tbs6926_config tbs6926_config = {
@@ -4319,6 +4336,13 @@ static int saa716x_tbs6926_frontend_attach(struct saa716x_adapter *adapter, int 
 					dvb_frontend_detach(adapter->fe);
 					goto exit;
 				}
+
+				/* call the init function once to initialize
+				   tuner's clock output divider and demod's
+				   master clock */
+				if (adapter->fe->ops.init)
+					adapter->fe->ops.init(adapter->fe);
+
 				tbs_read_mac(&i2c1->i2c_adapter, 160 + 16*count, mac);
 				memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
 				printk(KERN_INFO "TurboSight TBS6926 DVB-S2 card MAC=%pM\n",
@@ -4485,6 +4509,13 @@ static int saa716x_tbs6925ve_frontend_attach(struct saa716x_adapter *adapter, in
 						stv0900_config.address);
 				dvb_attach(stb6100_attach, adapter->fe, &stb6100ve_config, 
 						&i2c0->i2c_adapter);
+
+				/* call the init function once to initialize
+				   tuner's clock output divider and demod's
+				   master clock */
+				if (adapter->fe->ops.init)
+					adapter->fe->ops.init(adapter->fe);
+
 				tbs_read_mac(&i2c1->i2c_adapter, 160 + 16*count, mac);
 				memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
 				printk(KERN_INFO "TurboSight TBS6925VE DVB-S2 card MAC=%pM\n",

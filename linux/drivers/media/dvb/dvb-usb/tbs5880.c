@@ -515,7 +515,6 @@ static void tbs5880_led_ctrl(struct dvb_frontend *fe, int offon)
 	info("tbs5880_led_ctrl %d",offon);
 }
 
-
 static struct dvb_usb_device_properties tbs5880_properties;
 
 static struct tbs5880fe_config tbs5880fe_config = {

@@ -526,6 +526,12 @@ static int tbsqbox2ci_earda_tuner_attach(struct dvb_usb_adapter *adap)
 
 	info("Attached stb6100!\n");
 
+	/* call the init function once to initialize
+	   tuner's clock output divider and demod's
+	   master clock */
+	if (adap->fe[0]->ops.init)
+		adap->fe[0]->ops.init(adap->fe[0]);
+
 	return 0;
 }
 static int tbsqbox2ci_read_mac_address(struct dvb_usb_device *d, u8 mac[6])

@@ -211,6 +211,12 @@ static int tbsqbox2_earda_tuner_attach(struct dvb_usb_adapter *adap)
 		&adap->dev->i2c_adap))
 		return -EIO;
 
+	/* call the init function once to initialize
+	   tuner's clock output divider and demod's
+	   master clock */
+	if (adap->fe[0]->ops.init)
+		adap->fe[0]->ops.init(adap->fe[0]);
+
 	info("Attached stb6100!\n");
 
 	return 0;

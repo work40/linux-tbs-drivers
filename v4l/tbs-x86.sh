@@ -15,6 +15,7 @@ cp ./v4l/tbs5921fe_driver.o.x86 ./v4l/tbs5921fe_driver.o
 cp ./v4l/tbsctrl.o.x86 ./v4l/tbsctrl.o
 
 cp ./v4l/tbs6925ctrl_driver.o.x86 ./v4l/tbs6925ctrl_driver.o
+cp ./v4l/tbs6925cctrl_driver.o.x86 ./v4l/tbs6925cctrl_driver.o
 
 cp ./v4l/tbs62x0fe_driver.o.x86 ./v4l/tbs62x0fe_driver.o
 

@@ -300,6 +300,13 @@ config DVB_TBS6925CTRL
 	help
 	  A TurboSight TBS6925 controls. Say Y when you want to support this.
 
+config DVB_TBS6925CCTRL
+	tristate "TurboSight TBS6925C controls"
+	depends on DVB_CORE && I2C
+	default m if DVB_FE_CUSTOMISE
+	help
+	  A TurboSight TBS6925C controls. Say Y when you want to support this.
+
 config DVB_TBS5925FECTRL
 	tristate "TurboSight TBS5925 FE controls"
 	depends on DVB_CORE && I2C

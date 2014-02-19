@@ -38,6 +38,7 @@
 #include "cxd2820r.h"
 #include "tbs5281fe.h"
 #include "tbs5990fe.h"
+#include "tbscxci.h"
 
 MODULE_DESCRIPTION("driver for cx231xx based DVB cards");
 MODULE_AUTHOR("Srinivasa Deevi <srinivasa.deevi@conexant.com>");
@@ -62,6 +63,7 @@ if (debug >= level) 						\
 #define CX231XX_DVB_MAX_PACKETSIZE 564
 #define CX231XX_DVB_MAX_PACKETS 64
 
+#if 0
 struct cx231xx_dvb {
 	struct dvb_frontend *frontend;
 
@@ -78,6 +80,7 @@ struct cx231xx_dvb {
 	struct dmx_frontend fe_mem;
 	struct dvb_net net;
 };
+#endif
 
 static struct s5h1432_config dvico_s5h1432_config = {
 	.output_mode   = S5H1432_SERIAL_OUTPUT,
@@ -981,6 +984,13 @@ static int dvb_init(struct cx231xx *dev)
 	/* register everything */
 	result = register_dvb(dvb, THIS_MODULE, dev, &dev->udev->dev);
 
+	/* post init frontend */
+	switch (dev->model) {
+	case CX231XX_BOARD_TBS_5990:
+		tbscxci_init(dev->dvb[i], i);
+		break;
+	}
+
 	mutex_unlock(&dev->lock);
 
 	if (result < 0)
@@ -1010,6 +1020,7 @@ static int dvb_fini(struct cx231xx *dev)
 
 	for (i = 0; i < dev->board.adap_cnt; i++) {
 	if (dev->dvb[i]) {
+		tbscxci_release(dev->dvb[i]);
 		unregister_dvb(dev->dvb[i]);
 		dev->dvb[i] = NULL;
 	}

@@ -493,15 +493,6 @@ static struct stb6100_config stb6100_config = {
 	.refclock	= 27000000
 };
 
-static struct tbs6925cctrl_config tbs6925c_config[1] = { 
-	{
-	.tbs6925cctrl_address = 0x08,
-
-	.tbs6925c_ctrl1 = cx23885ctrl1,
-	.tbs6925c_ctrl2 = cx23885ctrl2,
-	}
-};
-
 static struct cx24116_config tbs_cx24116_config = {
 	.demod_address = 0x55,
 };
@@ -905,8 +896,6 @@ static int dvb_register(struct cx23885_tsport *port)
 	int mfe_shared = 0; /* bus not shared by default */
 	int ret;
 	
-	struct tbs6925cctrl_dev *ctl;
-
 	/* Get the first frontend */
 	fe0 = videobuf_dvb_get_frontend(&port->frontends, 1);
 	if (!fe0)

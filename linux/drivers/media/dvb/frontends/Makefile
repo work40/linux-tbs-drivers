@@ -182,3 +182,5 @@ obj-$(CONFIG_DVB_CXD2817) += cxd2817.o
 obj-$(CONFIG_DVB_CXD2850) += cxd2850.o
 obj-$(CONFIG_DVB_CXD2861) += cxd2861.o
 obj-$(CONFIG_DVB_IX2470) += ix2470.o
+obj-$(CONFIG_DVB_DS3103) += ds3103.o
+obj-$(CONFIG_DVB_TS2022) += ts2022.o

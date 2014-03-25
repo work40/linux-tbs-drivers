@@ -33,8 +33,10 @@
 #include "m88rs2000.h"
 #include "ts2020.h"
 #include "m88ds3103.h"
-#include "tda18271.h"
+#include "tda18271c2dd.h"
 #include "cxd2820r.h"
+#include "ts2022.h"
+#include "ds3103.h"
 
 #ifndef USB_PID_DW2102
 #define USB_PID_DW2102 0x2102
@@ -1102,10 +1104,9 @@ static struct ds3000_config su3000_ds3000_config = {
 	.ci_mode = 1,
 };
 
-static struct m88ds3103_config su3000_ds3103_config = {
+static struct ds3103_config su3000_ds3103_config = {
 	.demod_address = 0x68,
-	.ci_mode = 1,
-	.ts_mode = 0,
+	.ci_mode = 0,
 };
 
 static struct cxd2820r_config cxd2820r_config = {
@@ -1122,10 +1123,6 @@ static struct cxd2820r_config cxd2820r_config = {
 	/* enable LNA for DVB-T2 and DVB-C */
 	.gpio_dvbt2[0] = CXD2820R_GPIO_E | CXD2820R_GPIO_O | CXD2820R_GPIO_L,
 	.gpio_dvbc[0] = CXD2820R_GPIO_E | CXD2820R_GPIO_O | CXD2820R_GPIO_L,
-};
-
-static struct tda18271_config tda18271_config = {
-	.output_opt = TDA18271_OUTPUT_LT_OFF,
 };
 
 static u8 m88rs2000_inittab[] = {
@@ -1402,13 +1399,19 @@ static int su3000_frontend_attach(struct dvb_usb_adapter *d)
 		return 0;
 	}
 
-	d->fe[0] = dvb_attach(m88ds3103_attach, &su3000_ds3103_config,
-					&d->dev->i2c_adap);
-	if (d->fe[0] == NULL)
-		return -EIO;
+	d->fe[0] = dvb_attach(ds3103_attach,
+				&su3000_ds3103_config,
+				&d->dev->i2c_adap);
+	if (d->fe[0] != NULL) {
+		if (dvb_attach(ts2022_attach, d->fe[0], 0x60,
+				&d->dev->i2c_adap)) {
+			info("Attached DS3103/TS2022!\n");
+			return 0;
+		}
+	}
 
-	info("Attached M88DS3103!\n");
-	return 0;
+	info("Failed to attach DS310x/TS202x!\n");
+	return -EIO;
 
 }
 
@@ -1448,15 +1451,13 @@ static int t220_frontend_attach(struct dvb_usb_adapter *d)
 	if (d->fe[0] != NULL) {
 		struct i2c_adapter *i2c_tuner;
 		i2c_tuner = cxd2820r_get_tuner_i2c_adapter(d->fe[0]);
-		if (dvb_attach(tda18271_attach, d->fe[0], 0x60,
-			i2c_tuner, &tda18271_config)) {
+		if (dvb_attach(tda18271c2dd_attach, d->fe[0], i2c_tuner, 0x60)) {
 			info("Attached TDA18271HD/CXD2820R for DVB-T/T2!\n");
 			/* FE 1. This dvb_attach() cannot fail. */
 			d->fe[1] = dvb_attach(cxd2820r_attach, NULL, NULL,
 				d->fe[0]);
 			/* FE 1 attach tuner */
-			if (dvb_attach(tda18271_attach, d->fe[1], 0x60,
-				i2c_tuner, &tda18271_config))
+			if (dvb_attach(tda18271c2dd_attach, d->fe[1], i2c_tuner, 0x60))
 				info("Attached TDA18271HD/CXD2820R for DVB-C!\n");
 			return 0;
 		}

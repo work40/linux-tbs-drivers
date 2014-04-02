@@ -19,7 +19,6 @@
 #ifndef DS3103_H
 #define DS3103_H
 
-#include <linux/kconfig.h>
 #include <linux/dvb/frontend.h>
 
 struct ds3103_config {

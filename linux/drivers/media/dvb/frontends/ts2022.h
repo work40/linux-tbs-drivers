@@ -23,7 +23,6 @@
 #ifndef TS2022_H
 #define TS2022_H
 
-#include <linux/kconfig.h>
 #include <linux/dvb/frontend.h>
 
 /**

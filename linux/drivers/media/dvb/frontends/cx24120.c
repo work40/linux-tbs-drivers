@@ -770,7 +770,7 @@ int cx24120_init(struct dvb_frontend *fe)
 	ret = cx24120_writereg(state, 0xF7, 0x81);
 	ret = cx24120_writereg(state, 0xF8, 0x00);
 	ret = cx24120_writereg(state, 0xF9, 0x00);
-	ret = cx24120_writeregN(state, 0xFA, fw->data, (fw->size - 1), 0x00);
+	ret = cx24120_writeregN(state, 0xFA, (u8*) fw->data, (fw->size - 1), 0x00);
 	ret = cx24120_writereg(state, 0xF7, 0xC0);
 	ret = cx24120_writereg(state, 0xE0, 0x00);
 	ret = (fw->size - 2) & 0x00FF;
@@ -889,11 +889,11 @@ int cx24120_init(struct dvb_frontend *fe)
 } 
 EXPORT_SYMBOL(cx24120_init);		// end cx24120_reset
 //===================================================================
-static int cx24120_tune(struct dvb_frontend *fe, struct dvb_frontend_parameters *p)
+static int cx24120_tune(struct dvb_frontend *fe, struct dvb_frontend_parameters *p,
+	unsigned int mode_flags, unsigned int *delay, fe_status_t *status)
 {
 	struct cx24120_state *state = fe->demodulator_priv;
 	int delay_cnt, sd_idx = 0;
-	fe_status_t status;
 	
 	if ( p != NULL ) {
 		
@@ -911,15 +911,15 @@ static int cx24120_tune(struct dvb_frontend *fe, struct dvb_frontend_parameters 
 		delay_cnt = symrates_pairs[sd_idx].delay;
 		dbginfo("Wait for LOCK=================\n");
 		while (delay_cnt >= 0) {
-			cx24120_read_status(fe, &status);
-			if (status & FE_HAS_LOCK) break;
+			cx24120_read_status(fe, status);
+			if (*status & FE_HAS_LOCK) break;
 			msleep(100);
 			delay_cnt -=100;
 		}
 		dbginfo("Waiting finished=================\n");
 		
-		cx24120_read_status(fe, &status);
-		if ( !(status & FE_HAS_LOCK) ) {		// if no lock on S
+		cx24120_read_status(fe, status);
+		if ( !(*status & FE_HAS_LOCK) ) {		// if no lock on S
 			dbginfo("trying DVB-S2 now\n");
 			state->dvb_s2_mode |= 0x01;			// may be it locked on S2 ?
 			p->u.qpsk.fec_inner = FEC_AUTO;

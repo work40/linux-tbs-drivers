@@ -391,6 +391,13 @@ config DVB_TBS5922FE
 	help
 	  A DVB-S/S2 tuner module. Say Y when you want to support this frontend.
 
+config DVB_TBS5922SE
+	tristate "TurboSight TBS5922SE based"
+	depends on DVB_CORE && I2C
+	default m if DVB_FE_CUSTOMISE
+	help
+	  A DVB-S/S2 tuner module. Say Y when you want to support this frontend.
+
 config DVB_TBS5880FE
 	tristate "TurboSight TBS5880FE based"
 	depends on DVB_CORE && I2C

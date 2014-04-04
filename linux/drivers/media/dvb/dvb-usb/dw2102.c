@@ -33,7 +33,7 @@
 #include "m88rs2000.h"
 #include "ts2020.h"
 #include "m88ds3103.h"
-#include "tda18271c2dd.h"
+#include "tda18271.h"
 #include "cxd2820r.h"
 #include "ts2022.h"
 #include "ds3103.h"
@@ -1125,6 +1125,10 @@ static struct cxd2820r_config cxd2820r_config = {
 	.gpio_dvbc[0] = CXD2820R_GPIO_E | CXD2820R_GPIO_O | CXD2820R_GPIO_L,
 };
 
+static struct tda18271_config tda18271_config = {
+	.output_opt = TDA18271_OUTPUT_LT_OFF,
+};
+
 static u8 m88rs2000_inittab[] = {
 	DEMOD_WRITE, 0x9a, 0x30,
 	DEMOD_WRITE, 0x00, 0x01,
@@ -1451,13 +1455,15 @@ static int t220_frontend_attach(struct dvb_usb_adapter *d)
 	if (d->fe[0] != NULL) {
 		struct i2c_adapter *i2c_tuner;
 		i2c_tuner = cxd2820r_get_tuner_i2c_adapter(d->fe[0]);
-		if (dvb_attach(tda18271c2dd_attach, d->fe[0], i2c_tuner, 0x60)) {
+		if (dvb_attach(tda18271_attach, d->fe[0], 0x60,
+			i2c_tuner, &tda18271_config)) {
 			info("Attached TDA18271HD/CXD2820R for DVB-T/T2!\n");
 			/* FE 1. This dvb_attach() cannot fail. */
 			d->fe[1] = dvb_attach(cxd2820r_attach, NULL, NULL,
 				d->fe[0]);
 			/* FE 1 attach tuner */
-			if (dvb_attach(tda18271c2dd_attach, d->fe[1], i2c_tuner, 0x60))
+			if (dvb_attach(tda18271_attach, d->fe[1], 0x60,
+					i2c_tuner, &tda18271_config))
 				info("Attached TDA18271HD/CXD2820R for DVB-C!\n");
 			return 0;
 		}

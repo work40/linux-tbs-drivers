@@ -265,6 +265,13 @@ config DVB_M88DC2800
 	help
 	  A DVB-C tuner module. Say Y when you want to support this frontend.
 
+config DVB_M88RS6000
+	tristate "Montage M88RS6000 based"
+	depends on DVB_CORE && I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  A DVB-S/S2 tuner module. Say Y when you want to support this frontend.
+
 config DVB_TBSFE
 	tristate "TBS FE based"
 	depends on DVB_CORE && I2C

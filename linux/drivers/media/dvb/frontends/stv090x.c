@@ -38,6 +38,10 @@
 static unsigned int verbose;
 module_param(verbose, int, 0644);
 
+static unsigned int ts_nosync;
+module_param(ts_nosync, int, 0644);
+MODULE_PARM_DESC(ts_nosync, "TS FIFO Minimum latence mode");
+
 /* internal params node */
 struct stv090x_dev {
 	/* pointer for internal params, one for each pair of demods */
@@ -4629,6 +4633,30 @@ static int stv090x_set_tspath(struct stv090x_state *state)
 			goto err;
 	}
 
+	if (ts_nosync)
+	{
+		printk("stv090x_init: TS FIFO Minimum Latence mode\n");
+		reg = stv090x_read_reg(state, STV090x_P1_TSSTATEM);
+		STV090x_SETFIELD_Px(reg, TSOUT_NOSYNC, 1);
+		if (stv090x_write_reg(state, STV090x_P1_TSSTATEM, reg) < 0)
+			goto err;
+
+		reg = stv090x_read_reg(state, STV090x_P2_TSSTATEM);
+		STV090x_SETFIELD_Px(reg, TSOUT_NOSYNC, 1);
+		if (stv090x_write_reg(state, STV090x_P2_TSSTATEM, reg) < 0)
+			goto err;
+
+		reg = stv090x_read_reg(state, STV090x_P1_TSSYNC);
+		STV090x_SETFIELD_Px(reg, TSFIFO_SYNCMODE, 2);
+		if (stv090x_write_reg(state, STV090x_P1_TSSYNC, reg) < 0)
+			goto err;
+
+		reg = stv090x_read_reg(state, STV090x_P2_TSSYNC);
+		STV090x_SETFIELD_Px(reg, TSFIFO_SYNCMODE, 2);
+		if (stv090x_write_reg(state, STV090x_P2_TSSYNC, reg) < 0)
+			goto err;
+	}
+
 	reg = stv090x_read_reg(state, STV090x_P2_TSCFGH);
 	STV090x_SETFIELD_Px(reg, RST_HWARE_FIELD, 0x01);
 	if (stv090x_write_reg(state, STV090x_P2_TSCFGH, reg) < 0)
@@ -4741,6 +4769,7 @@ static int stv090x_init(struct dvb_frontend *fe)
 
 	if (stv090x_set_tspath(state) < 0)
 		goto err;
+
 
 	return 0;
 

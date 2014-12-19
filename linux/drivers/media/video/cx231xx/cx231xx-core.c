@@ -754,6 +754,7 @@ int cx231xx_set_mode(struct cx231xx *dev, enum cx231xx_mode set_mode)
 		case CX231XX_BOARD_TBS_5280:
 		case CX231XX_BOARD_TBS_5281:
 		case CX231XX_BOARD_TBS_5990:
+		case CX231XX_BOARD_TBS_5926:
 		errCode = cx231xx_set_agc_analog_digital_mux_select(dev, 0);
 			break;
 		default:
@@ -1617,6 +1618,7 @@ int cx231xx_dev_init(struct cx231xx *dev)
 	case CX231XX_BOARD_TBS_5280:
 	case CX231XX_BOARD_TBS_5281:
 	case CX231XX_BOARD_TBS_5990:
+	case CX231XX_BOARD_TBS_5926:
 	errCode = cx231xx_set_agc_analog_digital_mux_select(dev, 0);
 		break;
 	default:

@@ -4004,7 +4004,9 @@ static struct saa716x_config saa716x_tbs6983_config = {
 			/* adapter 1 */
 			.ts_port = 1
 		},
-	}
+	},
+	.rc_gpio_in = 4,
+	.rc_map_name = RC_MAP_TBS_NEC
 };
 
 

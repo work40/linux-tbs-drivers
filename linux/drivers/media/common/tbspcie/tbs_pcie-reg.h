@@ -30,7 +30,7 @@
 #define TBS_I2C_SADDR_2BYTE	(0x00000001 <<  5)
 #define TBS_I2C_SADDR_1BYTE	(0x00000001 <<  4)
 
-#define TBS_I2C_WRITE_BIT	(0x00000001 <<  8)
+#define TBS_I2C_READ_BIT	(0x00000001 <<  8)
 
 #define TBS_INT_BASE		0xc000
 

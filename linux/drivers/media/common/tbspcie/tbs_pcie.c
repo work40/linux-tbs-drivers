@@ -14,6 +14,8 @@
 
 #include "tbs6904fe.h"
 #include "tbs6908fe.h"
+#include "tbs6205fe.h"
+#include "tbs6814fe.h"
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
@@ -48,44 +50,63 @@ static int tbs_i2c_xfer(struct i2c_adapter *adapter,
 	u32 data1 = 0;
 	int timeout;
 
-	if (num == 2 &&
-		 msg[1].flags & I2C_M_RD && !(msg[0].flags & I2C_M_RD)) {
+	if ((num == 2 &&
+		 msg[1].flags & I2C_M_RD && !(msg[0].flags & I2C_M_RD)) ||
+		(num == 1 && (msg[0].flags & I2C_M_RD))) {	
 
-	data0 |= (msg[0].addr << 9) | TBS_I2C_START_BIT | TBS_I2C_STOP_BIT;
-	data0 |= TBS_I2C_WRITE_BIT;
+	size = (num == 2) ? msg[1].len : msg[0].len;
+
+	do {
+		data0 = 0;
+
+		data0 |= (msg[0].addr << 9) | TBS_I2C_READ_BIT;
+
+		if (loop == 0) {
+			data0 |= TBS_I2C_START_BIT;
 	
-	/* sub-address is 1 or 2 byte */
-	if (msg[0].len == 1) {
-		data0 |= TBS_I2C_SADDR_1BYTE;
-		data0 |= (msg[0].buf[0] << 16);
-	} else {
-		data0 |= TBS_I2C_SADDR_2BYTE;
-		data0 |= (msg[0].buf[0] << 16);
-		data0 |= (msg[0].buf[1] << 24);
-	}
+			/* sub-address is 1 or 2 byte */
+			if ((msg[0].len == 1) && (num == 2)) {
+				data0 |= TBS_I2C_SADDR_1BYTE;
+				data0 |= (msg[0].buf[0] << 16);
+			}
 
-	if (msg[1].len <= 4) {
-		data0 |= msg[1].len;
-	} else {
-		printk(KERN_ERR "TBS PCIE I2C%d read limit is 4 bytes\n",
-			i2c->i2c_dev);
-		return -EIO;
-	}
+			if ((msg[0].len == 2) && (num == 2)) {
+				data0 |= TBS_I2C_SADDR_2BYTE;
+				data0 |= (msg[0].buf[0] << 16);
+				data0 |= (msg[0].buf[1] << 24);
+			}
+		}
 
-	if (TBS_PCIE_READ(i2c->base, TBS_I2C_CTRL) == 1)
-		i2c->ready = 0;
+		buf_size = size > 4 ? 4 : size;
+
+		if (size <= 4)
+			data0 |= TBS_I2C_STOP_BIT;
+
+		data0 |= buf_size;
+		
+		if (TBS_PCIE_READ(i2c->base, TBS_I2C_CTRL) == 1)
+			i2c->ready = 0;
 	
-	TBS_PCIE_WRITE(i2c->base, TBS_I2C_CTRL, data0);
+		TBS_PCIE_WRITE(i2c->base, TBS_I2C_CTRL, data0);
 
-	/* timeout of 1 sec */
-	timeout = wait_event_timeout(i2c->wq, i2c->ready == 1, HZ);
-	if (timeout <= 0) {
-		printk(KERN_ERR "TBS PCIE I2C%d timeout\n", i2c->i2c_dev);
-		return -EIO;
-	}
+		/* timeout of 1 sec */
+		timeout = wait_event_timeout(i2c->wq, i2c->ready == 1, HZ);
+		if (timeout <= 0) {
+			printk(KERN_ERR "TBS PCIE I2C%d timeout\n", i2c->i2c_dev);
+			return -EIO;
+		}
 
-	data0 = TBS_PCIE_READ(i2c->base, TBS_I2C_DATA);
-	memcpy(msg[1].buf, &data0, msg[1].len);
+		data0 = TBS_PCIE_READ(i2c->base, TBS_I2C_DATA);
+		memcpy((num == 2) ? (msg[1].buf + 4*loop) : (msg[0].buf + 4*loop), &data0, buf_size);
+
+		loop++;
+
+		if (size >= 4)
+			size -= 4;
+		else
+			size = 0;
+	} while (size > 0);
+	
 	return num;
 	}
 
@@ -111,10 +132,10 @@ static int tbs_i2c_xfer(struct i2c_adapter *adapter,
 			data0 |= (buf_ptr[loop * 6 + 1] << 24);
 
 		if (buf_size >= 3) {
-			memcpy(&data1, buf_ptr + loop * 6 + 2, (buf_size - 2));
+			memcpy(&data1, &buf_ptr[loop * 6 + 2], (buf_size - 2));
 		}
 
-		if (buf_size < 6)
+		if (size <= 6)
 			data0 |= TBS_I2C_STOP_BIT;
 
 		data0 |= buf_size;
@@ -145,10 +166,7 @@ static int tbs_i2c_xfer(struct i2c_adapter *adapter,
 	return num;
 	}
 
-	if (num == 1 && (msg[0].flags & I2C_M_RD)) {	
-		printk(KERN_INFO "TBS PCIE I2C%d not implemented\n", i2c->i2c_dev);
-		return num;
-	}	
+	printk(KERN_INFO "TBS PCIE I2C%d request not implemented\n", i2c->i2c_dev);
 
 	return -EIO;
 }
@@ -171,6 +189,20 @@ static int tbs_i2c_init(struct tbs_pcie_dev *dev, u32 board)
 
 	/* i2c init base addr */
 	switch (board) {
+	case 0x6205:
+		dev->i2c_bus[0].base = TBS_I2C_BASE_0;
+		dev->i2c_bus[1].base = TBS_I2C_BASE_1;
+		dev->i2c_bus[2].base = TBS_I2C_BASE_2;
+		dev->i2c_bus[3].base = TBS_I2C_BASE_3;
+
+#if 1
+		TBS_PCIE_WRITE(dev->i2c_bus[0].base, 0x08, 39);
+		TBS_PCIE_WRITE(dev->i2c_bus[1].base, 0x08, 39);
+		TBS_PCIE_WRITE(dev->i2c_bus[2].base, 0x08, 39);
+		TBS_PCIE_WRITE(dev->i2c_bus[3].base, 0x08, 39);
+#endif
+		break;
+	case 0x6814:
 	case 0x6904:
 		dev->i2c_bus[0].base = TBS_I2C_BASE_0;
 		dev->i2c_bus[1].base = TBS_I2C_BASE_1;
@@ -865,7 +897,121 @@ static int tbs6908fe_frontend_attach(struct tbs_adapter *adapter, int type)
 	return 0;
 exit:
 	return -ENODEV;
-} 
+}
+
+static struct tbs6205fe_config tbs6205_fe_config = {
+	.tbs6205fe_address = 0x64,
+
+	.tbs6205_ctl1 = tbsdvbctl1,
+	.tbs6205_ctl2 = tbsdvbctl2,
+};
+
+static int tbs6205fe_frontend_attach(struct tbs_adapter *adapter, int type)
+{
+	struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
+	struct tbs_pcie_dev *dev = adapter->dev;
+
+	/* FIXME: read MAC from hardware */
+	u8 mac[] = {0x00, 0x22, 0xAB, 0x62, 0x05, 0x01};
+
+	if (adapter->count == 0 || adapter->count == 1) {
+
+		tbs_pcie_gpio_write(dev, adapter->count ? 2 : 0, 0, 0);
+		msleep(50);
+		tbs_pcie_gpio_write(dev, adapter->count ? 2 : 0, 0, 1);
+		msleep(100);
+
+		adapter->fe = dvb_attach(tbs6205fe_attach, &tbs6205_fe_config, i2c);
+
+		mac[5] += adapter->count; 
+		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
+		printk(KERN_INFO "TurboSight TBS6205 DVB-T2 card adapter%d MAC=%pM\n",
+			adapter->count, adapter->dvb_adapter.proposed_mac);
+	}
+
+	if (adapter->count == 2 || adapter->count == 3) {
+
+		tbs_pcie_gpio_write(dev, (adapter->count-2) ? 3 : 1, 0, 0);
+		msleep(50);
+		tbs_pcie_gpio_write(dev, (adapter->count-2) ? 3 : 1, 0, 1);
+		msleep(100);
+
+		adapter->fe = dvb_attach(tbs6205fe_attach, &tbs6205_fe_config, i2c);
+
+		mac[5] += adapter->count;
+		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
+		printk(KERN_INFO "TurboSight TBS6205 DVB-T2 card adapter%d MAC=%pM\n",
+			adapter->count, adapter->dvb_adapter.proposed_mac);
+	}
+
+	if (!adapter->fe) 
+		goto exit;
+
+	return 0;
+exit:
+	return -ENODEV;
+}
+
+static struct tbs6814fe_config tbs6814_fe_config0 = {
+	.tbs6814fe_address = 0x44,
+
+	.tbs6814_ctl1 = tbsdvbctl1,
+	.tbs6814_ctl2 = tbsdvbctl2,
+};
+
+static struct tbs6814fe_config tbs6814_fe_config1 = {
+	.tbs6814fe_address = 0x43,
+
+	.tbs6814_ctl1 = tbsdvbctl1,
+	.tbs6814_ctl2 = tbsdvbctl2,
+};
+
+static int tbs6814fe_frontend_attach(struct tbs_adapter *adapter, int type)
+{
+	struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
+
+	/* FIXME: read MAC from hardware */
+	u8 mac[] = {0x00, 0x22, 0xAB, 0x68, 0x14, 0x01};
+
+	if (adapter->count == 0 || adapter->count == 1) {
+#if 0
+		tbs_pcie_gpio_write(dev, adapter->count ? 2 : 0, 0, 0);
+		msleep(50);
+		tbs_pcie_gpio_write(dev, adapter->count ? 2 : 0, 0, 1);
+		msleep(100);
+#endif
+		adapter->fe = dvb_attach(tbs6814fe_attach, 
+				adapter->count ? &tbs6814_fe_config1 : &tbs6814_fe_config0, i2c);
+
+		mac[5] += adapter->count; 
+		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
+		printk(KERN_INFO "TurboSight TBS6814 ISDB-T card adapter%d MAC=%pM\n",
+			adapter->count, adapter->dvb_adapter.proposed_mac);
+	}
+
+	if (adapter->count == 2 || adapter->count == 3) {
+#if 0
+		tbs_pcie_gpio_write(dev, (adapter->count-2) ? 3 : 1, 0, 0);
+		msleep(50);
+		tbs_pcie_gpio_write(dev, (adapter->count-2) ? 3 : 1, 0, 1);
+		msleep(100);
+#endif
+		adapter->fe = dvb_attach(tbs6814fe_attach,
+				(adapter->count - 2) ? &tbs6814_fe_config1 : &tbs6814_fe_config0, i2c);
+
+		mac[5] += adapter->count;
+		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
+		printk(KERN_INFO "TurboSight TBS6814 ISDB-T card adapter%d MAC=%pM\n",
+			adapter->count, adapter->dvb_adapter.proposed_mac);
+	}
+
+	if (!adapter->fe) 
+		goto exit;
+
+	return 0;
+exit:
+	return -ENODEV;
+}
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
 static void __devexit tbs_remove(struct pci_dev *pdev)
@@ -873,7 +1019,7 @@ static void __devexit tbs_remove(struct pci_dev *pdev)
 static void tbs_remove(struct pci_dev *pdev)
 #endif
 {
-	struct tbs_pcie_dev *dev = 
+	struct tbs_pcie_dev *dev =
 		(struct tbs_pcie_dev*) pci_get_drvdata(pdev);
 
 	tbs_adapters_detach(dev);
@@ -1058,6 +1204,64 @@ static struct tbs_card_config pcie_tbs6908_config = {
 		}
 };
 
+#define PCIE_MODEL_TURBOSIGHT_TBS6205	"TurboSight TBS 6205"
+#define PCIE_DEV_TURBOSIGHT_TBS6205	"DVB-T/T2/C"
+
+static struct tbs_card_config pcie_tbs6205_config = {
+	.model_name		= PCIE_MODEL_TURBOSIGHT_TBS6205,
+	.dev_type		= PCIE_DEV_TURBOSIGHT_TBS6205,
+	.adapters		= 4,
+	.frontend_attach	= tbs6205fe_frontend_attach,
+	.irq_handler	= tbs6904_pcie_irq,
+	.adap_config	= {
+			{
+				/* adapter 0 */
+				.ts_in = 0
+			}, 
+			{
+				/* adapter 1 */
+				.ts_in = 1
+			},
+			{
+				/* adapter 2 */
+				.ts_in = 2
+			},
+			{
+				/* adapter 3 */
+				.ts_in = 3
+			}
+		}
+};
+
+#define PCIE_MODEL_TURBOSIGHT_TBS6814	"TurboSight TBS 6814"
+#define PCIE_DEV_TURBOSIGHT_TBS6814	"ISDB-T"
+
+static struct tbs_card_config pcie_tbs6814_config = {
+	.model_name		= PCIE_MODEL_TURBOSIGHT_TBS6814,
+	.dev_type		= PCIE_DEV_TURBOSIGHT_TBS6814,
+	.adapters		= 4,
+	.frontend_attach	= tbs6814fe_frontend_attach,
+	.irq_handler	= tbs6904_pcie_irq,
+	.adap_config	= {
+			{
+				/* adapter 0 */
+				.ts_in = 0
+			}, 
+			{
+				/* adapter 1 */
+				.ts_in = 1
+			},
+			{
+				/* adapter 2 */
+				.ts_in = 2
+			},
+			{
+				/* adapter 3 */
+				.ts_in = 3
+			}
+		}
+};
+
 #define MAKE_ENTRY( __vend, __chip, __subven, __subdev, __configptr) {	\
 	.vendor		= (__vend),					\
 	.device		= (__chip),					\
@@ -1073,7 +1277,12 @@ static const struct pci_device_id tbs_pci_table[] = {
 #endif
 	MAKE_ENTRY(0x544d, 0x6178, 0x6904, 0x1131, &pcie_tbs6904_config),
 	MAKE_ENTRY(0x544d, 0x6178, 0x6908, 0x1131, &pcie_tbs6908_config),
+	MAKE_ENTRY(0x544d, 0x6178, 0x6908, 0x0001, &pcie_tbs6908_config),
 	MAKE_ENTRY(0x544d, 0x6178, 0x6908, 0x1132, &pcie_tbs6908_config),
+	MAKE_ENTRY(0x544d, 0x6178, 0x6905, 0x0001, &pcie_tbs6908_config),
+	MAKE_ENTRY(0x544d, 0x6178, 0x6205, 0x1131, &pcie_tbs6205_config),
+	MAKE_ENTRY(0x544d, 0x6178, 0x6205, 0x0001, &pcie_tbs6205_config),
+	MAKE_ENTRY(0x544d, 0x6178, 0x6814, 0x1131, &pcie_tbs6814_config),
 	{ }
 };
 MODULE_DEVICE_TABLE(pci, tbs_pci_table);

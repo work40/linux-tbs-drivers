@@ -87,5 +87,7 @@ cp ./v4l/tbs6983fe_driver.o.x86_64 ./v4l/tbs6983fe_driver.o
 cp ./v4l/tbsdvbctl.o.x86_64 ./v4l/tbsdvbctl.o
 cp ./v4l/tbs6904fe_driver.o.x86_64 ./v4l/tbs6904fe_driver.o
 cp ./v4l/tbs6908fe_driver.o.x86_64 ./v4l/tbs6908fe_driver.o
+cp ./v4l/tbs6205fe_driver.o.x86_64 ./v4l/tbs6205fe_driver.o
+cp ./v4l/tbs6814fe_driver.o.x86_64 ./v4l/tbs6814fe_driver.o
 
 echo "TBS drivers configured for x86_64 platform."

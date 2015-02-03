@@ -981,7 +981,7 @@ static int dvb_init(struct cx231xx *dev)
 
 			dev->dvb[i]->frontend = dvb_attach(tbs5926fe_attach,
 							&tbs5926fe_config,
-							&dev->i2c_bus[dev->board.demod_i2c_master + 1].i2c_adap, i ? 0:1);
+							&dev->i2c_bus[dev->board.demod_i2c_master].i2c_adap, i ? 1:0);
 
 		if (dev->dvb[i]->frontend == NULL) {
 			printk(DRIVER_NAME

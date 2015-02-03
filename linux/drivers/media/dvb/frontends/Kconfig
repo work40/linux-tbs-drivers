@@ -566,6 +566,13 @@ config DVB_TBS6814FE
 	help
 	  A ISDB-T tuner module. Say Y when you want to support this frontend.
 
+config DVB_TBS6704FE
+	tristate "TurboSight TBS6704FE based"
+	depends on DVB_CORE && I2C
+	default m if DVB_FE_CUSTOMISE
+	help
+	  A ATSC tuner module. Say Y when you want to support this frontend.
+
 config DVB_TBS6926
 	tristate "TBS6926 based tuners"
 	depends on DVB_CORE && I2C

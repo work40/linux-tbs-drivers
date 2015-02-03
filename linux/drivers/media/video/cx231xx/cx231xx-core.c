@@ -1515,7 +1515,7 @@ int cx231xx_dev_init(struct cx231xx *dev)
 	/* External Master 2 Bus */
 	dev->i2c_bus[1].nr = 1;
 	dev->i2c_bus[1].dev = dev;
-	dev->i2c_bus[1].i2c_period = I2C_SPEED_400K;	/* 400 KHz */
+	dev->i2c_bus[1].i2c_period = I2C_SPEED_100K;	/* 100 KHz */
 	dev->i2c_bus[1].i2c_nostop = 0;
 	dev->i2c_bus[1].i2c_reserve = 0;
 

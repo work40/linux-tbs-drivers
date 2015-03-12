@@ -3137,7 +3137,7 @@ static int saa716x_tbs6984_frontend_attach(struct saa716x_adapter *adapter, int 
 		dprintk(SAA716x_ERROR, 1, "Probing for TBS6984FE %d", count);
 		adapter->fe = dvb_attach(tbs6984fe_attach, &tbs6984_fe_config0,
  							&i2c0->i2c_adapter, count);
-
+	if (adapter->fe) {
 		if (dvb_attach(isl6423_attach,
 				adapter->fe,
 				&i2c0->i2c_adapter,
@@ -3147,6 +3147,9 @@ static int saa716x_tbs6984_frontend_attach(struct saa716x_adapter *adapter, int 
 		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
 		printk(KERN_INFO "TurboSight TBS6984 DVB-S2 card port%d MAC=%pM\n",
 			count, adapter->dvb_adapter.proposed_mac);
+	} else  {
+		goto exit;
+	}
 		dprintk(SAA716x_ERROR, 1, "Done!");
 	}
 
@@ -3154,6 +3157,7 @@ static int saa716x_tbs6984_frontend_attach(struct saa716x_adapter *adapter, int 
 		dprintk(SAA716x_ERROR, 1, "Probing for TBS6984FE %d", count);
 		adapter->fe = dvb_attach(tbs6984fe_attach, &tbs6984_fe_config1,
 							&i2c1->i2c_adapter, count);
+	if (adapter->fe) {
 		if (dvb_attach(isl6423_attach,
 				adapter->fe,
 				&i2c1->i2c_adapter,
@@ -3163,12 +3167,11 @@ static int saa716x_tbs6984_frontend_attach(struct saa716x_adapter *adapter, int 
 		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
 		printk(KERN_INFO "TurboSight TBS6984 DVB-S2 card port%d MAC=%pM\n",
 			count, adapter->dvb_adapter.proposed_mac);
-
+	} else  {
+		goto exit;
+	}
 		dprintk(SAA716x_ERROR, 1, "Done!");
         }
-
-	if (!adapter->fe) 
-		goto exit;
 
 	return 0;
 exit:

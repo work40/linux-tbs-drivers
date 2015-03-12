@@ -20,9 +20,9 @@
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
-unsigned int int_type;
-module_param(int_type, int, 0644);
-MODULE_PARM_DESC(int_type, "force Interrupt Handler type: 0=INT-A, 1=MSI. default INT-A mode");
+unsigned int tbs_int_type;
+module_param(tbs_int_type, int, 0644);
+MODULE_PARM_DESC(tbs_int_type, "force Interrupt Handler type: 0=INT-A, 1=MSI. default INT-A mode");
 
 /* simple gpio */
 static void tbs_pcie_gpio_write(struct tbs_pcie_dev *dev, int gpio, int pin, int set)
@@ -211,6 +211,7 @@ static int tbs_i2c_init(struct tbs_pcie_dev *dev, u32 board)
 		dev->i2c_bus[2].base = TBS_I2C_BASE_2;
 		dev->i2c_bus[3].base = TBS_I2C_BASE_3;
 		break;
+	case 0x6905:
 	case 0x6908:
 		dev->i2c_bus[0].base = TBS_I2C_BASE_1;
 		dev->i2c_bus[1].base = TBS_I2C_BASE_1;
@@ -1114,7 +1115,7 @@ static int tbs_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 		goto fail0;
 	}
 
-	dev->int_type = int_type;
+	dev->int_type = tbs_int_type;
 	dev->pdev = pdev;
 	dev->card_config = (struct tbs_card_config *) pci_id->driver_data;
 

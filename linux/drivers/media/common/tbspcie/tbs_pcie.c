@@ -51,6 +51,8 @@ static int tbs_i2c_xfer(struct i2c_adapter *adapter,
 	u32 data1 = 0;
 	int timeout;
 
+	mutex_lock(&i2c->i2c_lock);
+
 	if ((num == 2 &&
 		 msg[1].flags & I2C_M_RD && !(msg[0].flags & I2C_M_RD)) ||
 		(num == 1 && (msg[0].flags & I2C_M_RD))) {	
@@ -108,6 +110,7 @@ static int tbs_i2c_xfer(struct i2c_adapter *adapter,
 			size = 0;
 	} while (size > 0);
 	
+	mutex_unlock(&i2c->i2c_lock);
 	return num;
 	}
 
@@ -164,6 +167,7 @@ static int tbs_i2c_xfer(struct i2c_adapter *adapter,
 
 	} while (size > 0);
 
+	mutex_unlock(&i2c->i2c_lock);
 	return num;
 	}
 
@@ -217,6 +221,12 @@ static int tbs_i2c_init(struct tbs_pcie_dev *dev, u32 board)
 		dev->i2c_bus[1].base = TBS_I2C_BASE_1;
 		dev->i2c_bus[2].base = TBS_I2C_BASE_3;
 		dev->i2c_bus[3].base = TBS_I2C_BASE_3;
+#if 1
+                TBS_PCIE_WRITE(dev->i2c_bus[0].base, 0x08, 39);
+                TBS_PCIE_WRITE(dev->i2c_bus[1].base, 0x08, 39);
+                TBS_PCIE_WRITE(dev->i2c_bus[2].base, 0x08, 39);
+                TBS_PCIE_WRITE(dev->i2c_bus[3].base, 0x08, 39);
+#endif
 		break;
 	default:
 		printk("TBS PCIE Unsupported board detected\n");	
@@ -237,6 +247,7 @@ static int tbs_i2c_init(struct tbs_pcie_dev *dev, u32 board)
 		/* i2c->ready = 1; */
 
 		init_waitqueue_head(&i2c->wq);
+		mutex_init(&i2c->i2c_lock);
 
 		adap = &i2c->i2c_adap;
 		i2c_set_adapdata(adap, i2c);
@@ -849,8 +860,14 @@ static struct tbs6908fe_config tbs6908_fe_config = {
 
 static int tbs6908fe_frontend_attach(struct tbs_adapter *adapter, int type)
 {
-	struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
+	//struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
 	struct tbs_pcie_dev *dev = adapter->dev;
+	
+	struct tbs_adapter *adap0 = &dev->tbs_pcie_adap[0];
+	struct i2c_adapter *i2c0 = &adap0->i2c->i2c_adap;
+
+	struct tbs_adapter *adap2 = &dev->tbs_pcie_adap[2];
+	struct i2c_adapter *i2c2 = &adap2->i2c->i2c_adap;
 
 	/* FIXME: read MAC from hardware */
 	u8 mac[] = {0x00, 0x22, 0xAB, 0x69, 0x08, 0x01};
@@ -872,7 +889,7 @@ static int tbs6908fe_frontend_attach(struct tbs_adapter *adapter, int type)
 	if (adapter->count == 0 || adapter->count == 1) {
 
 		adapter->fe = dvb_attach(tbs6908fe_attach, &tbs6908_fe_config,
-								i2c, adapter->count);
+								i2c0, adapter->count);
 
 		dvb_attach(tbsfe_attach, adapter->fe);
 
@@ -884,8 +901,9 @@ static int tbs6908fe_frontend_attach(struct tbs_adapter *adapter, int type)
 
 	if (adapter->count == 2 || adapter->count == 3) {
 
+
 		adapter->fe = dvb_attach(tbs6908fe_attach, &tbs6908_fe_config,
-								i2c, adapter->count);
+								i2c2, adapter->count);
 		dvb_attach(tbsfe_attach, adapter->fe);
 
 		mac[5] += adapter->count;

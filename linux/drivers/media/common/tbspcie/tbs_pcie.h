@@ -46,6 +46,7 @@ struct tbs_i2c {
 	u32			base;
 	int                    	ready;
 	wait_queue_head_t	wq;
+	struct mutex		i2c_lock;
 };
 
 struct tbs_adapter {

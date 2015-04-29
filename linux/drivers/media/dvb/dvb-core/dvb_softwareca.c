@@ -97,7 +97,12 @@ static int ca_ioctl(struct inode *inode, struct file *f,
 	unsigned int cmd, unsigned long arg)
 {
 #ifdef HAVE_UNLOCKED_IOCTL
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 19, 0)
 	struct inode *inode = f->f_dentry->d_inode;
+#else
+	struct inode *inode = file_inode(f);
+#endif
+
 #endif
 	struct ca_device *cadev = find_device(iminor(inode));
 

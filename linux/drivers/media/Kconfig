@@ -97,12 +97,6 @@ config DVB_NET
 	  You may want to disable the network support on embedded devices. If
 	  unsure say Y.
 
-config DVB_SOFTCA
-	tristate "DVB Software CA Support"
-	depends on DVB_CORE
-	help
-	  This option enables DVB Software CA Support.
-
 config VIDEO_MEDIA
 	tristate
 	default (DVB_CORE && (VIDEO_DEV = n)) || (VIDEO_DEV && (DVB_CORE = n)) || (DVB_CORE && VIDEO_DEV)

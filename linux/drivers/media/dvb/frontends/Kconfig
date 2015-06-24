@@ -1127,6 +1127,13 @@ config DVB_IT913X_FE
 	  A DVB-T tuner module.
 	  Say Y when you want to support this frontend.
 
+config DVB_SI2168
+	tristate "Silicon Labs SI2168"
+	depends on DVB_CORE && I2C
+	default m if DVB_FE_CUSTOMISE
+	help
+	  A DVB-S tuner module. Say Y when you want to support this frontend.
+
 comment "Tools to develop new frontends"
 
 config DVB_DUMMY_FE

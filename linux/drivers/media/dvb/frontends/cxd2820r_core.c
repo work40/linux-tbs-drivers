@@ -519,6 +519,8 @@ static int cxd2820r_read_snr(struct dvb_frontend *fe, u16 *snr)
 		ret = cxd2820r_read_snr_c(fe, snr);
 	}
 
+	*snr *= (0xffff/1000);
+
 	return ret;
 }
 

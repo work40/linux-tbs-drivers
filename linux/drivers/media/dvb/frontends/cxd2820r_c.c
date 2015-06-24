@@ -241,6 +241,8 @@ int cxd2820r_read_snr_c(struct dvb_frontend *fe, u16 *snr)
 	else
 		*snr = 0;
 
+	dbg("%s: dBx10=%d", __func__, *snr);
+
 	return ret;
 error:
 	dbg("%s: failed:%d", __func__, ret);

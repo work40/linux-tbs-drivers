@@ -207,7 +207,7 @@ static int si2168_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	state->fe_status = *status;
 
 	if (*status & FE_HAS_LOCK) {
-		state->snr = cmd.args[3] * (0xffff/400);
+		state->snr = cmd.args[3];
 	} else {
 		state->snr = 0;
 	}
@@ -244,7 +244,7 @@ static int si2168_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
 	struct si2168_state *state = fe->demodulator_priv;
 
-	*snr = state->snr;
+	*snr = state->snr * (0xffff/400) *3;
 
 	return 0;
 }

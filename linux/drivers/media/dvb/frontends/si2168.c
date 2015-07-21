@@ -244,7 +244,7 @@ static int si2168_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
 	struct si2168_state *state = fe->demodulator_priv;
 
-	*snr = state->snr * (0xffff/400) *3;
+	*snr = state->snr * (0xffff/400) *2;
 
 	return 0;
 }

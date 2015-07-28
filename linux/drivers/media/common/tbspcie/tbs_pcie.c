@@ -24,6 +24,9 @@ unsigned int tbs_int_type;
 module_param(tbs_int_type, int, 0644);
 MODULE_PARM_DESC(tbs_int_type, "force Interrupt Handler type: 0=INT-A, 1=MSI. default INT-A mode");
 
+extern int tbs_ci_init(struct tbs_adapter *adap, int nr);
+extern void tbs_ci_release(struct tbs_adapter *adap);
+
 /* simple gpio */
 static void tbs_pcie_gpio_write(struct tbs_pcie_dev *dev, int gpio, int pin, int set)
 {
@@ -236,6 +239,9 @@ static int tbs_i2c_init(struct tbs_pcie_dev *dev, u32 board)
 	case 0x6704:
 	case 0x6814:
 	case 0x6904:
+	case 0x6910:
+	case 0x6902:
+	case 0x6901:
 		dev->i2c_bus[0].base = TBS_I2C_BASE_0;
 		dev->i2c_bus[1].base = TBS_I2C_BASE_1;
 		dev->i2c_bus[2].base = TBS_I2C_BASE_2;
@@ -504,6 +510,183 @@ static irqreturn_t tbs6904_pcie_irq(int irq, void *dev_id)
 
 	return IRQ_HANDLED;
 }
+
+static irqreturn_t tbs6902_pcie_irq(int irq, void *dev_id)
+{
+	struct tbs_pcie_dev *dev = (struct tbs_pcie_dev *) dev_id;
+	struct tbs_i2c *i2c;
+	u32 stat;
+
+	stat = TBS_PCIE_READ(TBS_INT_BASE, TBS_INT_STATUS);
+
+	TBS_PCIE_WRITE(TBS_INT_BASE, TBS_INT_STATUS, stat);
+
+	if (!(stat & 0x000000ff))
+	{
+		TBS_PCIE_WRITE(TBS_INT_BASE, TBS_INT_ENABLE, 0x00000001); 
+		return IRQ_HANDLED;
+	}
+
+	if (stat & 0x00000080)
+		tasklet_schedule(&dev->tbs_pcie_adap[2].tasklet);
+
+	if (stat & 0x00000040)
+		tasklet_schedule(&dev->tbs_pcie_adap[3].tasklet);
+
+	if (stat & 0x00000020)
+		tasklet_schedule(&dev->tbs_pcie_adap[0].tasklet);
+
+	if (stat & 0x00000010)
+		tasklet_schedule(&dev->tbs_pcie_adap[1].tasklet);
+
+ 	if (stat & 0x00000008) {
+		i2c = &dev->i2c_bus[0];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);
+	}
+ 	
+	if (stat & 0x00000004) {
+		i2c = &dev->i2c_bus[1];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);
+	}
+	
+	if (stat & 0x00000002) {
+		i2c = &dev->i2c_bus[2];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);
+	}
+	
+	if (stat & 0x00000001) {
+		i2c = &dev->i2c_bus[3];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);	
+	}
+
+	/* enable interrupt */
+	TBS_PCIE_WRITE(TBS_INT_BASE, TBS_INT_ENABLE, 0x00000001);
+
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t tbs6901_pcie_irq(int irq, void *dev_id)
+{
+	struct tbs_pcie_dev *dev = (struct tbs_pcie_dev *) dev_id;
+	struct tbs_i2c *i2c;
+	u32 stat;
+
+	stat = TBS_PCIE_READ(TBS_INT_BASE, TBS_INT_STATUS);
+
+	TBS_PCIE_WRITE(TBS_INT_BASE, TBS_INT_STATUS, stat);
+
+	if (!(stat & 0x000000ff))
+	{
+		TBS_PCIE_WRITE(TBS_INT_BASE, TBS_INT_ENABLE, 0x00000001); 
+		return IRQ_HANDLED;
+	}
+
+	if (stat & 0x00000080)
+		tasklet_schedule(&dev->tbs_pcie_adap[3].tasklet);
+
+	if (stat & 0x00000040)
+		tasklet_schedule(&dev->tbs_pcie_adap[1].tasklet);
+
+	if (stat & 0x00000020)
+		tasklet_schedule(&dev->tbs_pcie_adap[2].tasklet);
+
+	if (stat & 0x00000010)
+		tasklet_schedule(&dev->tbs_pcie_adap[0].tasklet);
+
+ 	if (stat & 0x00000008) {
+		i2c = &dev->i2c_bus[0];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);
+	}
+ 	
+	if (stat & 0x00000004) {
+		i2c = &dev->i2c_bus[1];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);
+	}
+	
+	if (stat & 0x00000002) {
+		i2c = &dev->i2c_bus[2];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);
+	}
+	
+	if (stat & 0x00000001) {
+		i2c = &dev->i2c_bus[3];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);	
+	}
+
+	/* enable interrupt */
+	TBS_PCIE_WRITE(TBS_INT_BASE, TBS_INT_ENABLE, 0x00000001);
+
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t tbs6910_pcie_irq(int irq, void *dev_id)
+{
+	struct tbs_pcie_dev *dev = (struct tbs_pcie_dev *) dev_id;
+	struct tbs_i2c *i2c;
+	u32 stat;
+
+	stat = TBS_PCIE_READ(TBS_INT_BASE, TBS_INT_STATUS);
+
+	TBS_PCIE_WRITE(TBS_INT_BASE, TBS_INT_STATUS, stat);
+
+	if (!(stat & 0x000000ff))
+	{
+		TBS_PCIE_WRITE(TBS_INT_BASE, TBS_INT_ENABLE, 0x00000001); 
+		return IRQ_HANDLED;
+	}
+
+	if (stat & 0x00000080)
+		tasklet_schedule(&dev->tbs_pcie_adap[2].tasklet);
+
+	if (stat & 0x00000040)
+		tasklet_schedule(&dev->tbs_pcie_adap[3].tasklet);
+
+	if (stat & 0x00000020)
+		tasklet_schedule(&dev->tbs_pcie_adap[0].tasklet);
+
+	if (stat & 0x00000010)
+		tasklet_schedule(&dev->tbs_pcie_adap[1].tasklet);
+
+#if 0
+ 	if (stat & 0x00000008) {
+		i2c = &dev->i2c_bus[0];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);
+	}
+ 	
+	if (stat & 0x00000004) {
+		i2c = &dev->i2c_bus[1];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);
+	}
+#endif
+	
+	if (stat & 0x00000002) {
+		i2c = &dev->i2c_bus[2];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);
+	}
+	
+	if (stat & 0x00000001) {
+		i2c = &dev->i2c_bus[3];
+		i2c->ready = 1;
+		wake_up(&i2c->wq);	
+	}
+
+	/* enable interrupt */
+	TBS_PCIE_WRITE(TBS_INT_BASE, TBS_INT_ENABLE, 0x00000001);
+
+	return IRQ_HANDLED;
+}
+
 
 static irqreturn_t tbs6908_pcie_irq(int irq, void *dev_id)
 {
@@ -900,8 +1083,8 @@ static int tbs6904fe_frontend_attach(struct tbs_adapter *adapter, int type)
 	struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
 	struct tbs_pcie_dev *dev = adapter->dev;
 
-	struct tbs_adapter *adap0 = &dev->tbs_pcie_adap[0];
-	struct i2c_adapter *i2c0 = &adap0->i2c->i2c_adap;
+	struct tbs_adapter *adap1 = &dev->tbs_pcie_adap[1];
+	struct i2c_adapter *i2c1 = &adap1->i2c->i2c_adap;
 
 	u8 mac[6];
 
@@ -919,7 +1102,7 @@ static int tbs6904fe_frontend_attach(struct tbs_adapter *adapter, int type)
 
 		dvb_attach(tbsfe_attach, adapter->fe);
 
-		tbs_pcie_mac(i2c0, adapter->count, mac);
+		tbs_pcie_mac(i2c1, adapter->count, mac);
 		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
 		printk(KERN_INFO "TurboSight TBS6904 DVB-S2 card adapter%d MAC=%pM\n",
 			adapter->count, adapter->dvb_adapter.proposed_mac);
@@ -936,7 +1119,7 @@ static int tbs6904fe_frontend_attach(struct tbs_adapter *adapter, int type)
 								i2c, adapter->count);
 		dvb_attach(tbsfe_attach, adapter->fe);
 
-		tbs_pcie_mac(i2c0, adapter->count, mac);
+		tbs_pcie_mac(i2c1, adapter->count, mac);
 		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
 		printk(KERN_INFO "TurboSight TBS6904 DVB-S2 card adapter%d MAC=%pM\n",
 			adapter->count, adapter->dvb_adapter.proposed_mac);
@@ -949,6 +1132,123 @@ static int tbs6904fe_frontend_attach(struct tbs_adapter *adapter, int type)
 exit:
 	return -ENODEV;
 } 
+
+static int tbs6910fe_frontend_attach(struct tbs_adapter *adapter, int type)
+{
+	//struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
+	struct tbs_pcie_dev *dev = adapter->dev;
+
+	struct tbs_adapter *adap2 = &dev->tbs_pcie_adap[2];
+	struct i2c_adapter *i2c2 = &adap2->i2c->i2c_adap;
+
+	struct tbs_adapter *adap3 = &dev->tbs_pcie_adap[3];
+	struct i2c_adapter *i2c3 = &adap3->i2c->i2c_adap;
+
+	//u8 mac[6];
+
+	/* TODO: test gpio reset */
+
+	if (adapter->count == 0 || adapter->count == 1) {
+		tbs_pcie_gpio_write(dev, adapter->count ? 3 : 2, 0, 0);
+		msleep(50);
+		tbs_pcie_gpio_write(dev, adapter->count ? 3 : 2, 0, 1);
+		msleep(100);
+
+		adapter->fe = dvb_attach(tbs6904fe_attach,
+			adapter->count ? &tbs6904_fe_config1 : &tbs6904_fe_config0,
+						adapter->count ? i2c3 : i2c2, 2 + adapter->count);
+		if (!adapter->fe) 
+			goto exit;
+
+		dvb_attach(tbsfe_attach, adapter->fe);
+
+		//tbs_pcie_mac(i2c3, adapter->count, mac);
+		//memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
+		//printk(KERN_INFO "TurboSight TBS6910 DVB-S2 card adapter%d MAC=%pM\n",
+		//	adapter->count, adapter->dvb_adapter.proposed_mac);
+
+		tbs_ci_init(adapter, adapter->count);
+	}
+
+	return 0;
+exit:
+	return -ENODEV;
+}
+
+static int tbs6902fe_frontend_attach(struct tbs_adapter *adapter, int type)
+{
+	//struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
+	struct tbs_pcie_dev *dev = adapter->dev;
+
+	struct tbs_adapter *adap2 = &dev->tbs_pcie_adap[2];
+	struct i2c_adapter *i2c2 = &adap2->i2c->i2c_adap;
+
+	struct tbs_adapter *adap3 = &dev->tbs_pcie_adap[3];
+	struct i2c_adapter *i2c3 = &adap3->i2c->i2c_adap;
+
+	//u8 mac[6];
+
+	/* TODO: test gpio reset */
+
+	if (adapter->count == 0 || adapter->count == 1) {
+		tbs_pcie_gpio_write(dev, adapter->count ? 3 : 2, 0, 0);
+		msleep(50);
+		tbs_pcie_gpio_write(dev, adapter->count ? 3 : 2, 0, 1);
+		msleep(100);
+
+		adapter->fe = dvb_attach(tbs6904fe_attach,
+			adapter->count ? &tbs6904_fe_config1 : &tbs6904_fe_config0,
+						adapter->count ? i2c3 : i2c2, 2 + adapter->count);
+		if (!adapter->fe) 
+			goto exit;
+
+		dvb_attach(tbsfe_attach, adapter->fe);
+
+		//tbs_pcie_mac(i2c3, adapter->count, mac);
+		//memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
+		//printk(KERN_INFO "TurboSight TBS6902 DVB-S2 card adapter%d MAC=%pM\n",
+		//	adapter->count, adapter->dvb_adapter.proposed_mac);
+	}
+
+	return 0;
+exit:
+	return -ENODEV;
+}
+
+static int tbs6901fe_frontend_attach(struct tbs_adapter *adapter, int type)
+{
+	//struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
+	struct tbs_pcie_dev *dev = adapter->dev;
+
+	struct tbs_adapter *adap3 = &dev->tbs_pcie_adap[3];
+	struct i2c_adapter *i2c3 = &adap3->i2c->i2c_adap;
+
+	//u8 mac[6];
+
+	/* TODO: test gpio reset */
+
+	if (adapter->count == 0) {
+		tbs_pcie_gpio_write(dev, 3, 0, 0);
+		msleep(50);
+		tbs_pcie_gpio_write(dev, 3, 0, 1);
+		msleep(100);
+
+		adapter->fe = dvb_attach(tbs6904fe_attach, &tbs6904_fe_config1, i2c3, 3);
+		if (!adapter->fe) 
+			goto exit;
+
+		dvb_attach(tbsfe_attach, adapter->fe);
+
+		//tbs_pcie_mac(i2c3, adapter->count, mac);
+		//memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
+		//printk(KERN_INFO "TurboSight TBS6901 DVB-S2 card adapter%d MAC=%pM\n",
+		//	adapter->count, adapter->dvb_adapter.proposed_mac);
+	}
+
+	return 0;
+exit:
+	return -ENODEV;
+}
 
 static struct tbs6908fe_config tbs6908_fe_config = {
 	.tbs6908fe_address = 0x68,
@@ -1241,6 +1541,14 @@ static void tbs_remove(struct pci_dev *pdev)
 {
 	struct tbs_pcie_dev *dev =
 		(struct tbs_pcie_dev*) pci_get_drvdata(pdev);
+	struct tbs_adapter *tbs_adap;
+	int i;
+
+	for (i = 0; i < dev->card_config->adapters; i++) {
+		tbs_adap = &dev->tbs_pcie_adap[i];
+		if (tbs_adap->adap_priv)
+			tbs_ci_release(tbs_adap);
+	}
 
 	tbs_adapters_detach(dev);
 	tbs_i2c_exit(dev);
@@ -1395,6 +1703,93 @@ static struct tbs_card_config pcie_tbs6904_config = {
 		}
 };
 
+#define PCIE_MODEL_TURBOSIGHT_TBS6910	"TurboSight TBS 6910"
+#define PCIE_DEV_TURBOSIGHT_TBS6910	"DVB-S/S2"
+
+static struct tbs_card_config pcie_tbs6910_config = {
+	.model_name		= PCIE_MODEL_TURBOSIGHT_TBS6910,
+	.dev_type		= PCIE_DEV_TURBOSIGHT_TBS6910,
+	.adapters		= 4,
+	.frontend_attach	= tbs6910fe_frontend_attach,
+	.irq_handler	= tbs6910_pcie_irq,
+	.adap_config	= {
+			{
+				/* adapter 0 */
+				.ts_in = 2
+			}, 
+			{
+				/* adapter 1 */
+				.ts_in = 3
+			},
+			{
+				/* adapter 2 */
+				.ts_in = 0
+			},
+			{
+				/* adapter 3 */
+				.ts_in = 1
+			}
+		}
+};
+
+#define PCIE_MODEL_TURBOSIGHT_TBS6902	"TurboSight TBS 6902"
+#define PCIE_DEV_TURBOSIGHT_TBS6902	"DVB-S/S2"
+
+static struct tbs_card_config pcie_tbs6902_config = {
+	.model_name		= PCIE_MODEL_TURBOSIGHT_TBS6902,
+	.dev_type		= PCIE_DEV_TURBOSIGHT_TBS6902,
+	.adapters		= 4,
+	.frontend_attach	= tbs6902fe_frontend_attach,
+	.irq_handler	= tbs6902_pcie_irq,
+	.adap_config	= {
+			{
+				/* adapter 0 */
+				.ts_in = 2
+			}, 
+			{
+				/* adapter 1 */
+				.ts_in = 3
+			},
+			{
+				/* adapter 2 */
+				.ts_in = 0
+			},
+			{
+				/* adapter 3 */
+				.ts_in = 1
+			}
+		}
+};
+
+#define PCIE_MODEL_TURBOSIGHT_TBS6901	"TurboSight TBS 6901"
+#define PCIE_DEV_TURBOSIGHT_TBS6901	"DVB-S/S2"
+
+static struct tbs_card_config pcie_tbs6901_config = {
+	.model_name		= PCIE_MODEL_TURBOSIGHT_TBS6902,
+	.dev_type		= PCIE_DEV_TURBOSIGHT_TBS6902,
+	.adapters		= 4,
+	.frontend_attach	= tbs6901fe_frontend_attach,
+	.irq_handler	= tbs6901_pcie_irq,
+	.adap_config	= {
+			{
+				/* adapter 0 */
+				.ts_in = 3
+			}, 
+			{
+				/* adapter 1 */
+				.ts_in = 1
+			},
+			{
+				/* adapter 2 */
+				.ts_in = 2
+			},
+			{
+				/* adapter 3 */
+				.ts_in = 0
+			}
+		}
+};
+
 #define PCIE_MODEL_TURBOSIGHT_TBS6908	"TurboSight TBS 6908"
 #define PCIE_DEV_TURBOSIGHT_TBS6908	"DVB-S/S2"
 
@@ -1444,11 +1839,11 @@ static struct tbs_card_config pcie_tbs6903_config = {
 			},
 			{
 				/* adapter 2 */
-				.ts_in = 3
+				.ts_in = 1
 			},
 			{
 				/* adapter 3 */
-				.ts_in = 2
+				.ts_in = 0
 			}
 		}
 };
@@ -1563,6 +1958,9 @@ static const struct pci_device_id tbs_pci_table[] = {
 	MAKE_ENTRY(0x544d, 0x6178, 0x6814, 0x1131, &pcie_tbs6814_config),
 	MAKE_ENTRY(0x544d, 0x6178, 0x6704, 0x0001, &pcie_tbs6704_config),
 	MAKE_ENTRY(0x544d, 0x6178, 0x6903, 0x0001, &pcie_tbs6903_config),
+	MAKE_ENTRY(0x544d, 0x6178, 0x6910, 0x0001, &pcie_tbs6910_config),
+	MAKE_ENTRY(0x544d, 0x6178, 0x6902, 0x0002, &pcie_tbs6902_config),
+	MAKE_ENTRY(0x544d, 0x6178, 0x6902, 0x0001, &pcie_tbs6901_config),
 	{ }
 };
 MODULE_DEVICE_TABLE(pci, tbs_pci_table);

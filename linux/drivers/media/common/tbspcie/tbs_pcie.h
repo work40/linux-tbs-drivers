@@ -72,6 +72,8 @@ struct tbs_adapter {
 	int			feeds;
 	int			count;
 	int			tsin;
+
+	void			*adap_priv;
 };
 
 struct tbs_pcie_dev {

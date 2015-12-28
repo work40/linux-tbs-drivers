@@ -1295,7 +1295,7 @@ static int tbs6904fe_frontend_attach(struct tbs_adapter *adapter, int type)
 	struct tbs_adapter *adap2 = &dev->tbs_pcie_adap[2];
 	struct i2c_adapter *i2c2 = &adap2->i2c->i2c_adap;
 
-	u8 mac[6];
+	u8 mac[24];
 
 	/* TODO: test gpio reset */
 
@@ -1314,8 +1314,7 @@ static int tbs6904fe_frontend_attach(struct tbs_adapter *adapter, int type)
 
 		dvb_attach(tbsfe_attach, adapter->fe);
 
-		tbs_pcie_mac(i2c2, adapter->count, mac);
-		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
+		memcpy(adapter->dvb_adapter.proposed_mac, &mac[6*adapter->count], 6);
 		printk(KERN_INFO "TurboSight TBS6904 DVB-S2 card adapter%d MAC=%pM\n",
 			adapter->count, adapter->dvb_adapter.proposed_mac);
 	}
@@ -1334,10 +1333,16 @@ static int tbs6904fe_frontend_attach(struct tbs_adapter *adapter, int type)
 
 		dvb_attach(tbsfe_attach, adapter->fe);
 
-		tbs_pcie_mac(i2c2, adapter->count, mac);
-		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
+		memcpy(adapter->dvb_adapter.proposed_mac, &mac[6*adapter->count], 6);
 		printk(KERN_INFO "TurboSight TBS6904 DVB-S2 card adapter%d MAC=%pM\n",
 			adapter->count, adapter->dvb_adapter.proposed_mac);
+	}
+
+	if (adapter->count == 3) {
+		tbs_pcie_mac(i2c2, 0, &mac[0]);
+		tbs_pcie_mac(i2c2, 1, &mac[6]);
+		tbs_pcie_mac(i2c2, 2, &mac[12]);
+		tbs_pcie_mac(i2c2, 3, &mac[18]);
 	}
 
 	return 0;

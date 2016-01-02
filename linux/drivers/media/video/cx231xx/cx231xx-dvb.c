@@ -42,6 +42,7 @@
 #include "tbs5990fe.h"
 #include "tbs5926fe.h"
 #include "tbscxci.h"
+#include "tbsfe.h"
 
 MODULE_DESCRIPTION("driver for cx231xx based DVB cards");
 MODULE_AUTHOR("Srinivasa Deevi <srinivasa.deevi@conexant.com>");
@@ -1008,6 +1009,8 @@ static int dvb_init(struct cx231xx *dev)
 			result = -EINVAL;
 			goto out_free;
 		}
+
+		dvb_attach(tbsfe_attach, dev->dvb[i]->frontend);
 		
 		/* define general-purpose callback pointer */
 		dvb->frontend->callback = cx231xx_tuner_callback;

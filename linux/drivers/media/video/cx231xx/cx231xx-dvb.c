@@ -58,7 +58,7 @@ MODULE_PARM_DESC(cxd2820r, "Enable open-source TDA18212/CXD2820r drivers for TBS
 
 static unsigned int si2168 = 1;
 module_param(si2168, int, 0644);
-MODULE_PARM_DESC(si2168, "Enable open-source Si2157/2168 drivers for TBS5281: default 0");
+MODULE_PARM_DESC(si2168, "Enable open-source Si2157/2168 drivers for TBS5281: default 1");
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 

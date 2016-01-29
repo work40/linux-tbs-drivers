@@ -317,6 +317,7 @@ static int tbs_i2c_init(struct tbs_pcie_dev *dev, u32 board)
 		dev->i2c_bus[2].base = TBS_I2C_BASE_2;
 		dev->i2c_bus[3].base = TBS_I2C_BASE_3;
 		break;
+	case 0x6290:
 	case 0x6910:
 	case 0x6903:
 	case 0x6902:
@@ -333,7 +334,7 @@ static int tbs_i2c_init(struct tbs_pcie_dev *dev, u32 board)
 		dev->i2c_bus[1].base = TBS_I2C_BASE_1;
 		dev->i2c_bus[2].base = TBS_I2C_BASE_3;
 		dev->i2c_bus[3].base = TBS_I2C_BASE_3;
-#if 0
+#if 1
                 TBS_PCIE_WRITE(dev->i2c_bus[0].base, 0x08, 39);
                 TBS_PCIE_WRITE(dev->i2c_bus[1].base, 0x08, 39);
                 TBS_PCIE_WRITE(dev->i2c_bus[2].base, 0x08, 39);
@@ -1167,6 +1168,7 @@ static int tbs6904fe_frontend_attach(struct tbs_adapter *adapter, int type)
 
 	struct tbs_adapter *adap0 = &dev->tbs_pcie_adap[0];
 	struct tbs_adapter *adap1 = &dev->tbs_pcie_adap[1];
+	struct tbs_adapter *adap3 = &dev->tbs_pcie_adap[3];
 
 	u8 mac[6];
 
@@ -1204,23 +1206,14 @@ static int tbs6904fe_frontend_attach(struct tbs_adapter *adapter, int type)
 	if (adapter->count == 3) {
 		tbs_pcie_mac(i2c2, 0, mac);
 		memcpy(adap0->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6904 DVB-S2 card adapter%d MAC=%pM\n",
-			0, adap0->dvb_adapter.proposed_mac);
-
-		tbs_pcie_mac(i2c2, 1, mac);
-		memcpy(adap1->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6904 DVB-S2 card adapter%d MAC=%pM\n",
-			1, adap1->dvb_adapter.proposed_mac);
-
-		tbs_pcie_mac(i2c2, 2, mac);
+		mac[5] += 3;
+		printk(KERN_INFO "TurboSight TBS6904 MAC Addresses: %pM - %pM\n",
+			adap0->dvb_adapter.proposed_mac, mac);
+		memcpy(adap3->dvb_adapter.proposed_mac, mac, 6);
+		mac[5]--;
 		memcpy(adap2->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6904 DVB-S2 card adapter%d MAC=%pM\n",
-			2, adap2->dvb_adapter.proposed_mac);
-
-		tbs_pcie_mac(i2c2, 3, mac);
-		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6904 DVB-S2 card adapter%d MAC=%pM\n",
-			3, adapter->dvb_adapter.proposed_mac);
+		mac[5]--;
+		memcpy(adap1->dvb_adapter.proposed_mac, mac, 6);
 	}
 
 	return 0;
@@ -1261,13 +1254,10 @@ static int tbs6910fe_frontend_attach(struct tbs_adapter *adapter, int type)
 	if (adapter->count == 1) {
 		tbs_pcie_mac(i2c0, 0, mac);
 		memcpy(adap0->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6910 DVB-S2 card adapter%d MAC=%pM\n",
-			0, adap0->dvb_adapter.proposed_mac);
-
-		tbs_pcie_mac(i2c0, adapter->count, mac);
-		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6910 DVB-S2 card adapter%d MAC=%pM\n",
-			adapter->count, adapter->dvb_adapter.proposed_mac);
+		mac[5] += 1;
+		printk(KERN_INFO "TurboSight TBS6910 MAC Addresses: %pM - %pM\n",
+			adap0->dvb_adapter.proposed_mac, mac);
+		memcpy(adap1->dvb_adapter.proposed_mac, mac, 6);
 	}
 
 	return 0;
@@ -1297,8 +1287,8 @@ static int tbs6901fe_frontend_attach(struct tbs_adapter *adapter, int type)
 
 		tbs_pcie_mac(i2c, adapter->count, mac);
 		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6901 DVB-S2 card adapter%d MAC=%pM\n",
-			adapter->count, adapter->dvb_adapter.proposed_mac);
+		printk(KERN_INFO "TurboSight TBS6901 MAC Address: %pM\n",
+			adapter->dvb_adapter.proposed_mac);
 	}
 
 	return 0;
@@ -1332,11 +1322,15 @@ static int tbs6902fe_frontend_attach(struct tbs_adapter *adapter, int type)
 			goto exit;
 
 		dvb_attach(tbsfe_attach, adapter->fe);
+	}
 
-		tbs_pcie_mac(i2c1, adapter->count, mac);
-		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6902 DVB-S2 card adapter%d MAC=%pM\n",
-			adapter->count, adapter->dvb_adapter.proposed_mac);
+	if (adapter->count == 1) {
+		tbs_pcie_mac(i2c1, 0, mac);
+		memcpy(adap0->dvb_adapter.proposed_mac, mac, 6);
+		mac[5] += 1;
+		printk(KERN_INFO "TurboSight TBS6902 MAC Addresses: %pM - %pM\n",
+			adap0->dvb_adapter.proposed_mac, mac);
+		memcpy(adap1->dvb_adapter.proposed_mac, mac, 6);
 	}
 
 	return 0;
@@ -1361,6 +1355,9 @@ static int tbs6908fe_frontend_attach(struct tbs_adapter *adapter, int type)
 
 	struct tbs_adapter *adap2 = &dev->tbs_pcie_adap[2];
 	struct i2c_adapter *i2c2 = &adap2->i2c->i2c_adap;
+
+	struct tbs_adapter *adap1 = &dev->tbs_pcie_adap[1];
+	struct tbs_adapter *adap3 = &dev->tbs_pcie_adap[3];
 
 	u8 mac[6];
 
@@ -1387,11 +1384,6 @@ static int tbs6908fe_frontend_attach(struct tbs_adapter *adapter, int type)
 			goto exit;
 
 		dvb_attach(tbsfe_attach, adapter->fe);
-
-		tbs_pcie_mac(i2c0, adapter->count, mac);
-		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6905/8 DVB-S2 card adapter%d MAC=%pM\n",
-			adapter->count, adapter->dvb_adapter.proposed_mac);
 	}
 
 	if (adapter->count == 2 || adapter->count == 3) {
@@ -1403,11 +1395,19 @@ static int tbs6908fe_frontend_attach(struct tbs_adapter *adapter, int type)
 			 goto exit;
 
 		dvb_attach(tbsfe_attach, adapter->fe);
+	}
 
-		tbs_pcie_mac(i2c0, adapter->count, mac);
-		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6905/8 DVB-S2 card adapter%d MAC=%pM\n",
-			adapter->count, adapter->dvb_adapter.proposed_mac);
+	if (adapter->count == 3) {
+		tbs_pcie_mac(i2c0, 0, mac);
+		memcpy(adap0->dvb_adapter.proposed_mac, mac, 6);
+		mac[5] += 3;
+		printk(KERN_INFO "TurboSight TBS6905/8 MAC Addresses: %pM - %pM\n",
+			adap0->dvb_adapter.proposed_mac, mac);
+		memcpy(adap3->dvb_adapter.proposed_mac, mac, 6);
+		mac[5]--;
+		memcpy(adap2->dvb_adapter.proposed_mac, mac, 6);
+		mac[5]--;
+		memcpy(adap1->dvb_adapter.proposed_mac, mac, 6);
 	}
 
 	return 0;
@@ -1444,12 +1444,15 @@ static int tbs6903fe_frontend_attach(struct tbs_adapter *adapter, int type)
 			goto exit;
 
 		dvb_attach(tbsfe_attach, adapter->fe);
+	}
 
-		tbs_pcie_mac(i2c0, adapter->count, mac);
-		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6903 DVB-S2 card adapter%d MAC=%pM\n",
-			adapter->count, adapter->dvb_adapter.proposed_mac);
-
+	if (adapter->count == 1) {
+		tbs_pcie_mac(i2c0, 0, mac);
+		memcpy(adap0->dvb_adapter.proposed_mac, mac, 6);
+		mac[5] += 1;
+		printk(KERN_INFO "TurboSight TBS6903 MAC Addresses: %pM - %pM\n",
+			adap0->dvb_adapter.proposed_mac, mac);
+		memcpy(adap1->dvb_adapter.proposed_mac, mac, 6);
 	}
 
 	return 0;
@@ -1482,6 +1485,10 @@ static int tbs6205fe_frontend_attach(struct tbs_adapter *adapter, int type)
 	struct tbs_adapter *adap2 = &dev->tbs_pcie_adap[2];
 	struct i2c_adapter *i2c2 = &adap2->i2c->i2c_adap;
 
+	struct tbs_adapter *adap0 = &dev->tbs_pcie_adap[0];
+	struct tbs_adapter *adap1 = &dev->tbs_pcie_adap[1];
+	struct tbs_adapter *adap3 = &dev->tbs_pcie_adap[3];
+
 	u8 mac[6];
 
 	if (adapter->count == 0 || adapter->count == 1) {
@@ -1504,11 +1511,6 @@ static int tbs6205fe_frontend_attach(struct tbs_adapter *adapter, int type)
 				dvb_frontend_detach(adapter->fe);
 				goto exit;
 			}
-
-		tbs_pcie_mac(i2c2, adapter->count, mac);
-		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6205 DVB-T2 card adapter%d MAC=%pM\n",
-			adapter->count, adapter->dvb_adapter.proposed_mac);
 	}
 
 	if (adapter->count == 2 || adapter->count == 3) {
@@ -1531,11 +1533,63 @@ static int tbs6205fe_frontend_attach(struct tbs_adapter *adapter, int type)
 				dvb_frontend_detach(adapter->fe);
 				goto exit;
 			}
+	}
 
-		tbs_pcie_mac(i2c2, adapter->count, mac);
-		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
-		printk(KERN_INFO "TurboSight TBS6205 DVB-T2 card adapter%d MAC=%pM\n",
-			adapter->count, adapter->dvb_adapter.proposed_mac);
+	if (adapter->count == 3) {
+		tbs_pcie_mac(i2c2, 0, mac);
+		memcpy(adap0->dvb_adapter.proposed_mac, mac, 6);
+		mac[5] += 3;
+		printk(KERN_INFO "TurboSight TBS6205 MAC Addresses: %pM - %pM\n",
+			adap0->dvb_adapter.proposed_mac, mac);
+		memcpy(adap3->dvb_adapter.proposed_mac, mac, 6);
+		mac[5]--;
+		memcpy(adap2->dvb_adapter.proposed_mac, mac, 6);
+		mac[5]--;
+		memcpy(adap1->dvb_adapter.proposed_mac, mac, 6);
+	}
+
+	return 0;
+exit:
+	return -ENODEV;
+}
+
+static int tbs6290se_frontend_attach(struct tbs_adapter *adapter, int type)
+{
+	//struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
+	struct tbs_pcie_dev *dev = adapter->dev;
+
+#if 1
+	struct tbs_adapter *adap0 = &dev->tbs_pcie_adap[0];
+	struct i2c_adapter *i2c0 = &adap0->i2c->i2c_adap;
+#endif
+
+	struct tbs_adapter *adap1 = &dev->tbs_pcie_adap[1];
+	struct i2c_adapter *i2c1 = &adap1->i2c->i2c_adap;
+
+	u8 mac[6];
+
+	if (adapter->count == 0 || adapter->count == 1) {
+
+		tbs_pcie_gpio_write(dev, adapter->count ? 2 : 0, 0, 0);
+		msleep(50);
+		tbs_pcie_gpio_write(dev, adapter->count ? 2 : 0, 0, 1);
+		msleep(100);
+
+		adapter->fe = dvb_attach(tbs6205fe_attach, &tbs6205_fe_config, adapter->count ? i2c0 : i2c1);
+
+		if (!adapter->fe)
+			goto exit;
+
+		tbs_ci_init(adapter, 1 - adapter->count);
+	}
+
+	if (adapter->count == 1) {
+		tbs_pcie_mac(i2c1, 0, mac);
+		memcpy(adap0->dvb_adapter.proposed_mac, mac, 6);
+		mac[5] += 1;
+		printk(KERN_INFO "TurboSight TBS6290SE MAC Addresses: %pM - %pM\n",
+			adap0->dvb_adapter.proposed_mac, mac);
+		memcpy(adap1->dvb_adapter.proposed_mac, mac, 6);
 	}
 
 	return 0;
@@ -1684,6 +1738,14 @@ static int tbs6909fe_frontend_attach(struct tbs_adapter *adapter, int type)
 	struct tbs_adapter *adap2 = &dev->tbs_pcie_adap[2];
 	struct i2c_adapter *i2c2 = &adap2->i2c->i2c_adap;
 
+	struct tbs_adapter *adap0 = &dev->tbs_pcie_adap[0];
+	struct tbs_adapter *adap1 = &dev->tbs_pcie_adap[1];
+	struct tbs_adapter *adap3 = &dev->tbs_pcie_adap[3];
+	struct tbs_adapter *adap4 = &dev->tbs_pcie_adap[4];
+	struct tbs_adapter *adap5 = &dev->tbs_pcie_adap[5];
+	struct tbs_adapter *adap6 = &dev->tbs_pcie_adap[6];
+	struct tbs_adapter *adap7 = &dev->tbs_pcie_adap[7];
+
 	u8 mac[6];
 
 	adapter->fe = dvb_attach(tbs6909fe_attach, &tbs6909_fe_config,
@@ -1694,10 +1756,26 @@ static int tbs6909fe_frontend_attach(struct tbs_adapter *adapter, int type)
 
 	dvb_attach(tbsfe_attach, adapter->fe);
 
-	tbs_pcie_mac(i2c2, adapter->count, mac);
-	memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
-	printk(KERN_INFO "TurboSight TBS6909 DVB-S2 card adapter%d MAC=%pM\n",
-		adapter->count, adapter->dvb_adapter.proposed_mac);
+	if (adapter->count == 7) {
+		tbs_pcie_mac(i2c2, adapter->count, mac);
+		memcpy(adap0->dvb_adapter.proposed_mac, mac, 6);
+		mac[5] += 7;
+		printk(KERN_INFO "TurboSight TBS6909 MAC Addresses: %pM - %pM\n",
+			adap0->dvb_adapter.proposed_mac, mac);
+		memcpy(adap7->dvb_adapter.proposed_mac, mac, 6);
+		mac[5]--;
+		memcpy(adap6->dvb_adapter.proposed_mac, mac, 6);
+		mac[5]--;
+		memcpy(adap5->dvb_adapter.proposed_mac, mac, 6);
+		mac[5]--;
+		memcpy(adap4->dvb_adapter.proposed_mac, mac, 6);
+		mac[5]--;
+		memcpy(adap3->dvb_adapter.proposed_mac, mac, 6);
+		mac[5]--;
+		memcpy(adap2->dvb_adapter.proposed_mac, mac, 6);
+		mac[5]--;
+		memcpy(adap1->dvb_adapter.proposed_mac, mac, 6);
+	}
 
 	return 0;
 exit:
@@ -2018,6 +2096,27 @@ static struct tbs_card_config pcie_tbs6205_config = {
 		}
 };
 
+#define PCIE_MODEL_TURBOSIGHT_TBS6290   "TurboSight TBS 6290 SE"
+#define PCIE_DEV_TURBOSIGHT_TBS6290     "DVB-T/T2/C"
+
+static struct tbs_card_config pcie_tbs6290_config = {
+	.model_name		= PCIE_MODEL_TURBOSIGHT_TBS6290,
+	.dev_type		= PCIE_DEV_TURBOSIGHT_TBS6290,
+	.adapters		= 2,
+	.frontend_attach	= tbs6290se_frontend_attach,
+	.irq_handler	= tbs_dual_pcie_irq,
+	.adap_config	= {
+			{
+				/* adapter 0 */
+				.ts_in = 3
+			},
+			{
+				/* adapter 1 */
+				.ts_in = 2
+			},
+		}
+};
+
 #define PCIE_MODEL_TURBOSIGHT_TBS6814	"TurboSight TBS 6814"
 #define PCIE_DEV_TURBOSIGHT_TBS6814	"ISDB-T"
 
@@ -2141,6 +2240,7 @@ static const struct pci_device_id tbs_pci_table[] = {
 	MAKE_ENTRY(0x544d, 0x6178, 0x6905, 0x0001, &pcie_tbs6908_config),
 	MAKE_ENTRY(0x544d, 0x6178, 0x6205, 0x1131, &pcie_tbs6205_config),
 	MAKE_ENTRY(0x544d, 0x6178, 0x6205, 0x0001, &pcie_tbs6205_config),
+	MAKE_ENTRY(0x544d, 0x6178, 0x6290, 0x0002, &pcie_tbs6290_config),
 	MAKE_ENTRY(0x544d, 0x6178, 0x6814, 0x1131, &pcie_tbs6814_config),
 	MAKE_ENTRY(0x544d, 0x6178, 0x6814, 0x0001, &pcie_tbs6814_config),
 	MAKE_ENTRY(0x544d, 0x6178, 0x6704, 0x0001, &pcie_tbs6704_config),

@@ -12,9 +12,6 @@ echo "TBS drivers building..."
 make -j4
 
 echo "TBS drivers installing..."
-sudo rm -r -f /lib/modules/$(test $VER && echo $VER || uname -r)/kernel/drivers/media
-sudo rm -r -f /lib/modules/$(test $VER && echo $VER || uname -r)/kernel/drivers/staging/media
-sudo rm -r -f /lib/modules/$(test $VER && echo $VER || uname -r)/kernel/drivers/misc/altera-stapl
 sudo make install
 
 echo "TBS drivers installation done"

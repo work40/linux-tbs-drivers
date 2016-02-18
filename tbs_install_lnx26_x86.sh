@@ -12,6 +12,7 @@ echo "TBS drivers building..."
 make -j2
 
 echo "TBS drivers installing..."
+sudo rm -r -f /lib/modules/$(uname -r)/extra
 sudo make install
 
 echo "TBS drivers installation done"

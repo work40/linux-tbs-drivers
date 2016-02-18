@@ -1,7 +1,8 @@
 #!/bin/bash
 
-echo "TBS drivers set for x64 Linux 2.6.x"
+make distclean
 
+echo "TBS drivers set for x64 Linux"
 ./v4l/tbs-x86_64.sh
 #./v4l/tbs-dvbc-x86_64.sh
 

@@ -38,7 +38,7 @@ int tbs_ci_read_cam_control(struct dvb_ca_en50221 *ca,
 	data |= (address & 3) << 8;
 	data |= 0x02 << 16;
 	TBS_PCIE_WRITE(TBS_CI_BASE(state->nr), 0x00, data);
-	udelay(1);
+	udelay(150);
 	
 	data = TBS_PCIE_READ(TBS_CI_BASE(state->nr), 0x08);
 
@@ -65,7 +65,7 @@ int tbs_ci_write_cam_control(struct dvb_ca_en50221 *ca, int slot,
 	data |= 0x03 << 16;
 	data |= value << 24;
 	TBS_PCIE_WRITE(TBS_CI_BASE(state->nr), 0x00, data);
-	udelay(1);
+	udelay(150);
 
 	mutex_unlock(&state->ca_mutex);
 
@@ -90,7 +90,7 @@ int tbs_ci_read_attribute_mem(struct dvb_ca_en50221 *ca,
 	data |= (address & 0xff) << 8;
 	data |= 0x00 << 16;
 	TBS_PCIE_WRITE(TBS_CI_BASE(state->nr), 0x00, data);
-	udelay(1);
+	udelay(150);
 
 	data = TBS_PCIE_READ(TBS_CI_BASE(state->nr), 0x04);
 
@@ -118,7 +118,7 @@ int tbs_ci_write_attribute_mem(struct dvb_ca_en50221 *ca,
 	data |= 0x01 << 16;
 	data |= value << 24;
 	TBS_PCIE_WRITE(TBS_CI_BASE(state->nr), 0x00, data);
-	udelay(1);
+	udelay(150);
 
 	mutex_unlock(&state->ca_mutex);
 

@@ -1268,6 +1268,18 @@ static int cxusb_mygica_t230_frontend_attach(struct dvb_usb_adapter *adap)
 	usb_clear_halt(d->udev,
 		usb_rcvbulkpipe(d->udev, d->props.adapter[0].stream.endpoint));
 
+	/* Reset the tuner */
+	if (cxusb_d680_dmb_gpio_tuner(d, 0x80, 0) < 0) {
+		err("clear tuner gpio failed");
+		return -EIO;
+	}
+	msleep(100);
+	if (cxusb_d680_dmb_gpio_tuner(d, 0x80, 1) < 0) {
+		err("set tuner gpio failed");
+		return -EIO;
+	}
+	msleep(100);
+
 	/* Attach frontend */
 	adap->fe[0] = dvb_attach(si2168_attach, &mygica_t230_si2168_cfg,
 		&d->i2c_adap);
@@ -1418,7 +1430,12 @@ static struct usb_device_id cxusb_table [] = {
 	{ USB_DEVICE(USB_VID_DVICO, USB_PID_DVICO_BLUEBIRD_DUAL_4_REV_2) },
 	{ USB_DEVICE(USB_VID_CONEXANT, USB_PID_CONEXANT_D680_DMB) },
 	{ USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_D689) },
+	{ USB_DEVICE(USB_VID_CONEXANT, 0xc687) },
 	{ USB_DEVICE(USB_VID_CONEXANT, 0xc688) },
+	{ USB_DEVICE(USB_VID_GTEK, 0xd230) },
+	{ USB_DEVICE(USB_VID_GTEK, 0xd231) },
+	{ USB_DEVICE(USB_VID_GTEK, 0xd232) },
+	{ USB_DEVICE(USB_VID_GTEK, 0xd233) },
 	{}		/* Terminating entry */
 };
 MODULE_DEVICE_TABLE (usb, cxusb_table);
@@ -2072,12 +2089,32 @@ static struct dvb_usb_device_properties cxusb_mygica_t230_properties = {
 		.rc_query         = cxusb_d680_dmb_rc_query,
 	},
 
-	.num_device_descs = 1,
+	.num_device_descs = 5,
 	.devices = {
 		{
 			"Mygica T230 DVB-T/T2/C",
-			{ NULL },
 			{ &cxusb_table[20], NULL },
+			{ &cxusb_table[21], NULL },
+		},
+		{
+			"Mygica X9330 DVB-T/T2/C 0",
+			{ NULL },
+			{ &cxusb_table[22], NULL },
+		},
+		{
+			"Mygica X9330 DVB-T/T2/C 1",
+			{ NULL },
+			{ &cxusb_table[23], NULL },
+		},
+		{
+			"Mygica X9330 DVB-T/T2/C 2",
+			{ NULL },
+			{ &cxusb_table[24], NULL },
+		},
+		{
+			"Mygica X9330 DVB-T/T2/C 3",
+			{ NULL },
+			{ &cxusb_table[25], NULL },
 		},
 	}
 };

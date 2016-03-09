@@ -1371,6 +1371,7 @@ static struct dvb_usb_device_properties cxusb_aver_a868r_properties;
 static struct dvb_usb_device_properties cxusb_d680_dmb_properties;
 static struct dvb_usb_device_properties cxusb_mygica_d689_properties;
 static struct dvb_usb_device_properties cxusb_mygica_t230_properties;
+static struct dvb_usb_device_properties cxusb_mygica_x9330_properties;
 
 static int cxusb_probe(struct usb_interface *intf,
 		       const struct usb_device_id *id)
@@ -1402,6 +1403,8 @@ static int cxusb_probe(struct usb_interface *intf,
 	    0 == dvb_usb_device_init(intf, &cxusb_mygica_d689_properties,
 				     THIS_MODULE, NULL, adapter_nr) ||
 	    0 == dvb_usb_device_init(intf, &cxusb_mygica_t230_properties,
+				     THIS_MODULE, NULL, adapter_nr) ||
+	    0 == dvb_usb_device_init(intf, &cxusb_mygica_x9330_properties,
 				     THIS_MODULE, NULL, adapter_nr) ||
 	    0)
 		return 0;
@@ -2089,13 +2092,52 @@ static struct dvb_usb_device_properties cxusb_mygica_t230_properties = {
 		.rc_query         = cxusb_d680_dmb_rc_query,
 	},
 
-	.num_device_descs = 5,
+	.num_device_descs = 1,
 	.devices = {
 		{
 			"Mygica T230 DVB-T/T2/C",
 			{ &cxusb_table[20], NULL },
 			{ &cxusb_table[21], NULL },
 		},
+	}
+};
+
+static struct dvb_usb_device_properties cxusb_mygica_x9330_properties = {
+	.caps = DVB_USB_IS_AN_I2C_ADAPTER,
+
+	.usb_ctrl         = CYPRESS_FX2,
+
+	.size_of_priv     = sizeof(struct cxusb_state),
+
+	.num_adapters = 1,
+	.adapter = {
+		{
+			.streaming_ctrl   = cxusb_streaming_ctrl,
+			.frontend_attach  = cxusb_mygica_t230_frontend_attach,
+			.tuner_attach     = cxusb_mygica_t230_tuner_attach,
+
+			/* parameter for the MPEG2-data transfer */
+			.stream = {
+				.type = USB_BULK,
+				.count = 5,
+				.endpoint = 0x02,
+				.u = {
+					.bulk = {
+						.buffersize = 8192,
+					}
+				}
+			},
+		},
+	},
+
+	.power_ctrl       = cxusb_d680_dmb_power_ctrl,
+
+	.i2c_algo         = &cxusb_i2c_algo,
+
+	.generic_bulk_ctrl_endpoint = 0x01,
+
+	.num_device_descs = 4,
+	.devices = {
 		{
 			"Mygica X9330 DVB-T/T2/C 0",
 			{ NULL },

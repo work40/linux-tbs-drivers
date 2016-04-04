@@ -433,6 +433,27 @@ static inline int dvb_bulk_copy(struct cx231xx *dev, struct urb *urb)
 	return 0;
 }
 
+static inline int dvb_bulk_copy_ts2(struct cx231xx *dev, struct urb *urb)
+{
+	if (!dev)
+		return 0;
+
+	if (dev->state & DEV_DISCONNECTED)
+		return 0;
+
+	if (urb->status < 0) {
+		print_err_status(dev, -1, urb->status);
+		if (urb->status == -ENOENT)
+			return 0;
+	}
+
+	/* Feed the transport payload into the kernel demux */
+	dvb_dmx_swfilter(&dev->dvb[1]->demux,
+		urb->transfer_buffer, urb->actual_length);
+
+	return 0;
+}
+
 static int start_streaming(struct cx231xx_dvb *dvb)
 {
 	int rc;
@@ -464,7 +485,7 @@ static int start_streaming(struct cx231xx_dvb *dvb)
 				dvb_isoc_copy);
 		
 	} else {
-		cx231xx_info("DVB transfer mode is BULK.\n");
+		/* cx231xx_info("DVB transfer mode is BULK.\n"); */
 		if (dvb->count == 0)
 			cx231xx_set_alt_setting(dev, INDEX_TS1, 0);
 		if (dvb->count == 1)
@@ -473,10 +494,15 @@ static int start_streaming(struct cx231xx_dvb *dvb)
 		if (rc < 0)
 			return rc;
 		dev->mode_tv = 1;
+		if (dvb->count == 1)
+		return cx231xx_init_bulk_ts2(dev, CX231XX_DVB_MAX_PACKETS,
+				CX231XX_DVB_NUM_BUFS,
+				dev->ts2_mode.max_pkt_size,
+				dvb_bulk_copy_ts2);
+		else
 		return cx231xx_init_bulk(dev, CX231XX_DVB_MAX_PACKETS,
 				CX231XX_DVB_NUM_BUFS,
-				dvb->count ? dev->ts2_mode.max_pkt_size 
-						: dev->ts1_mode.max_pkt_size,
+				dev->ts1_mode.max_pkt_size,
 				dvb_bulk_copy);
 	}
 
@@ -492,7 +518,10 @@ static int stop_streaming(struct cx231xx_dvb *dvb)
 		if (dvb->count == 1)
 			cx231xx_uninit_isoc_ts2(dev);
 	else
-		cx231xx_uninit_bulk(dev);
+		if (dvb->count == 0)
+			cx231xx_uninit_bulk(dev);
+		if (dvb->count == 1)
+			cx231xx_uninit_bulk_ts2(dev);
 
 	cx231xx_set_mode(dev, CX231XX_SUSPEND);
 
@@ -802,7 +831,7 @@ static int tbs_cx_mac(struct i2c_adapter *i2c_adap, u8 count, u8 *mac)
 
 		memcpy(&e[0x40 * i], b , 64);
 	}
-
+	
 	memcpy(mac, &e[0x58 + 6 + 0x10*count], 6);
 	
 	return 0;
@@ -1060,9 +1089,16 @@ static int dvb_init(struct cx231xx *dev)
 
 		dvb_attach(tbsfe_attach, dev->dvb[i]->frontend);
 
-		tbs_cx_mac(&dev->i2c_bus[1].i2c_adap, i, mac);
-		msleep(100);
-		memcpy(dev->dvb[i]->adapter.proposed_mac, mac, 6);
+		if (i == 0) { 
+			tbs_cx_mac(&dev->i2c_bus[1].i2c_adap, 0, mac);
+		}
+
+		if (i == 1) {
+			memcpy(dev->dvb[0]->adapter.proposed_mac, mac, 6);
+			printk(KERN_INFO "TurboSight TBS5990 MAC Addresse bas: %pM\n", mac);
+			mac[5] +=1;
+			memcpy(dev->dvb[1]->adapter.proposed_mac, mac, 6);
+		}
 		
 		/* define general-purpose callback pointer */
 		dvb->frontend->callback = cx231xx_tuner_callback;

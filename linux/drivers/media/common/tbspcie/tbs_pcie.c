@@ -327,6 +327,11 @@ static int tbs_i2c_init(struct tbs_pcie_dev *dev, u32 board)
 	case 0x6902:
 		dev->i2c_bus[0].base = TBS_I2C_BASE_2;
 		dev->i2c_bus[1].base = TBS_I2C_BASE_3;
+#if 1
+		TBS_PCIE_WRITE(dev->i2c_bus[0].base, 0x08, 39);
+		TBS_PCIE_WRITE(dev->i2c_bus[1].base, 0x08, 39);
+#endif
+
 		break;
 	case 0x6901:
 		dev->i2c_bus[0].base = TBS_I2C_BASE_3;
@@ -339,10 +344,10 @@ static int tbs_i2c_init(struct tbs_pcie_dev *dev, u32 board)
 		dev->i2c_bus[2].base = TBS_I2C_BASE_3;
 		dev->i2c_bus[3].base = TBS_I2C_BASE_3;
 #if 1
-                TBS_PCIE_WRITE(dev->i2c_bus[0].base, 0x08, 39);
-                TBS_PCIE_WRITE(dev->i2c_bus[1].base, 0x08, 39);
-                TBS_PCIE_WRITE(dev->i2c_bus[2].base, 0x08, 39);
-                TBS_PCIE_WRITE(dev->i2c_bus[3].base, 0x08, 39);
+		TBS_PCIE_WRITE(dev->i2c_bus[0].base, 0x08, 39);
+		TBS_PCIE_WRITE(dev->i2c_bus[1].base, 0x08, 39);
+		TBS_PCIE_WRITE(dev->i2c_bus[2].base, 0x08, 39);
+		TBS_PCIE_WRITE(dev->i2c_bus[3].base, 0x08, 39);
 #endif
 		break;
 	default:

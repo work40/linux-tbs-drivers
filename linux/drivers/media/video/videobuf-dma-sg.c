@@ -182,12 +182,17 @@ static int videobuf_dma_init_user_locked(struct videobuf_dmabuf *dma,
 	dprintk(1, "init user [0x%lx+0x%lx => %d pages]\n",
 		data, size, dma->nr_pages);
 
-	err = get_user_pages(current, current->mm,
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+	err = get_user_pages(data & PAGE_MASK, dma->nr_pages,
+			     rw == READ, 1, /* force */
+			     dma->pages, NULL);
+	#else
+    err = get_user_pages(current, current->mm,
 			     data & PAGE_MASK, dma->nr_pages,
 			     rw == READ, 1, /* force */
 			     dma->pages, NULL);
-
-	if (err != dma->nr_pages) {
+	#endif
+		if (err != dma->nr_pages) {
 		dma->nr_pages = (err >= 0) ? err : 0;
 		dprintk(1, "get_user_pages: err=%d [%d]\n", err, dma->nr_pages);
 		return err < 0 ? err : -EINVAL;
@@ -317,7 +322,11 @@ int videobuf_dma_free(struct videobuf_dmabuf *dma)
 
 	if (dma->pages) {
 		for (i = 0; i < dma->nr_pages; i++)
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+			put_page(dma->pages[i]);
+	#else
 			page_cache_release(dma->pages[i]);
+	#endif
 		kfree(dma->pages);
 		dma->pages = NULL;
 	}
@@ -638,4 +647,3 @@ void videobuf_queue_sg_init(struct videobuf_queue *q,
 				 priv, &sg_ops, ext_lock);
 }
 EXPORT_SYMBOL_GPL(videobuf_queue_sg_init);
-

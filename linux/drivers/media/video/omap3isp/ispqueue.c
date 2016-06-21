@@ -281,8 +281,11 @@ static void isp_video_buffer_cleanup(struct isp_video_buffer *buf)
 		isp_video_buffer_lock_vma(buf, 0);
 
 		for (i = 0; i < buf->npages; ++i)
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)	
+			put_page(buf->pages[i]);
+	#else
 			page_cache_release(buf->pages[i]);
-
+	#endif
 		vfree(buf->pages);
 		buf->pages = NULL;
 	}
@@ -332,10 +335,17 @@ static int isp_video_buffer_prepare_user(struct isp_video_buffer *buf)
 		return -ENOMEM;
 
 	down_read(&current->mm->mmap_sem);
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+	ret = get_user_pages(data & PAGE_MASK,
+			     buf->npages,
+			     buf->vbuf.type == V4L2_BUF_TYPE_VIDEO_CAPTURE, 0,
+			     buf->pages, NULL);
+	#else
 	ret = get_user_pages(current, current->mm, data & PAGE_MASK,
 			     buf->npages,
 			     buf->vbuf.type == V4L2_BUF_TYPE_VIDEO_CAPTURE, 0,
 			     buf->pages, NULL);
+	#endif
 	up_read(&current->mm->mmap_sem);
 
 	if (ret != buf->npages) {
